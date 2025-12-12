@@ -31,3 +31,19 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# Credenciais e arquivos sensíveis
+*.json
+*.key
+*.p12
+*.pem
+credentials/
+service-account*.json
+gcp-credentials.json
+.env
+.env.local
+.DS_Store
+
+# Logs
+logs/
+*.log
