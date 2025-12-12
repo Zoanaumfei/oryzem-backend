@@ -43,6 +43,7 @@
 			<scope>runtime</scope>
 		</dependency>
 
+		<!-- Define Project Lombok -->
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
