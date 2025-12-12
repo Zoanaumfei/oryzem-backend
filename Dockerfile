@@ -1,6 +1,11 @@
 # Fase 1: Build
 FROM eclipse-temurin:17-jdk-alpine AS build
 
+# CONFIGURA LOCALE PARA UTF-8 (adicione estas linhas)
+ENV LANG='en_US.UTF-8' LANGUAGE='en_US:en' LC_ALL='en_US.UTF-8'
+RUN apk add --no-cache tzdata locales \
+    && localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
+
 WORKDIR /app
 COPY pom.xml mvnw ./
 COPY .mvn .mvn
