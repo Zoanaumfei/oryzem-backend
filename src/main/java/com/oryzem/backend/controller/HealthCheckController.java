@@ -25,7 +25,7 @@ public class HealthCheckController {
         this.dynamoDbClient = dynamoDbClient;
     }
 
-    @GetMapping("/api/dynamodb")
+    @GetMapping("/dynamodb")
     @Operation(summary = "Verificar saúde do DynamoDB")
     public ResponseEntity<Map<String, Object>> checkDynamoDB() {
         Map<String, Object> response = new HashMap<>();
@@ -79,7 +79,7 @@ public class HealthCheckController {
         }
     }
 
-    @GetMapping("/api/dynamodb/tables")
+    @GetMapping("/dynamodb/tables")
     @Operation(summary = "Listar todas as tabelas DynamoDB")
     public ResponseEntity<Map<String, Object>> listAllTables() {
         Map<String, Object> response = new HashMap<>();
@@ -132,7 +132,7 @@ public class HealthCheckController {
         }
     }
 
-    @GetMapping("/api/dynamodb/table/{tableName}")
+    @GetMapping("/dynamodb/table/{tableName}")
     @Operation(summary = "Verificar tabela específica")
     public ResponseEntity<Map<String, Object>> checkTable(String tableName) {
         Map<String, Object> response = new HashMap<>();

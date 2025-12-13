@@ -1,4 +1,4 @@
-package com.oryzem.backend.config;
+package com.oryzem.backend.config.google;
 
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.storage.Storage;
