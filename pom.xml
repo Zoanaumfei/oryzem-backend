@@ -179,8 +179,8 @@
 					</annotationProcessorPaths>
 					<compilerArgs>
 						<!-- Argumentos importantes para MapStruct -->
-						<compilerArg>-Amapstruct.defaultComponentModel=spring</compilerArg>
-						<compilerArg>-Amapstruct.unmappedTargetPolicy=IGNORE</compilerArg>
+						<arg>-Amapstruct.defaultComponentModel=spring</arg>
+						<arg>-Amapstruct.unmappedTargetPolicy=IGNORE</arg>
 					</compilerArgs>
 				</configuration>
 			</plugin>

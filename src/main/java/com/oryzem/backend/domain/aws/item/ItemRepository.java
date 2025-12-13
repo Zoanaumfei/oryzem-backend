@@ -1,32 +1,59 @@
 package com.oryzem.backend.domain.aws.item;
 
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
+import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
+import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
+import software.amazon.awssdk.enhanced.dynamodb.Key;
+import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
 
+import java.util.Optional;
+
+@Slf4j
 @Repository
-@RequiredArgsConstructor // Cria construtor com final fields
+@RequiredArgsConstructor
 public class ItemRepository {
 
-    private final DynamoDBMapper dynamoDBMapper;
+    private final DynamoDbEnhancedClient enhancedClient;
+
+    // Nome da sua tabela DynamoDB
+    private static final String TABLE_NAME = "VW216PA2-Project";
+
+    private DynamoDbTable<Item> getItemTable() {
+        return enhancedClient.table(TABLE_NAME, TableSchema.fromBean(Item.class));
+    }
 
     public Item save(Item item) {
-        dynamoDBMapper.save(item);
+        log.info("Salvando item: {}/{}", item.getPartNumberID(), item.getSupplierID());
+        getItemTable().putItem(item);
         return item;
     }
 
-    public Item findById(String partNumberID, String supplierID) {
-        return dynamoDBMapper.load(Item.class, partNumberID, supplierID);
+    public Optional<Item> findById(String partNumberID, String supplierID) {
+        log.info("Buscando item: {}/{}", partNumberID, supplierID);
+
+        Key key = Key.builder()
+                .partitionValue(partNumberID)
+                .sortValue(supplierID)
+                .build();
+
+        Item item = getItemTable().getItem(key);
+        return Optional.ofNullable(item);
     }
 
     public boolean exists(String partNumberID, String supplierID) {
-        return findById(partNumberID, supplierID) != null;
+        return findById(partNumberID, supplierID).isPresent();
     }
 
     public void delete(String partNumberID, String supplierID) {
-        Item item = findById(partNumberID, supplierID);
-        if (item != null) {
-            dynamoDBMapper.delete(item);
-        }
+        log.info("Deletando item: {}/{}", partNumberID, supplierID);
+
+        Key key = Key.builder()
+                .partitionValue(partNumberID)
+                .sortValue(supplierID)
+                .build();
+
+        getItemTable().deleteItem(key);
     }
 }

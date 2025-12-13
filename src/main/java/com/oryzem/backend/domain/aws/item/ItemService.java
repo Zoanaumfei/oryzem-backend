@@ -3,12 +3,11 @@ package com.oryzem.backend.domain.aws.item;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import java.util.Optional;
 
-@Slf4j // Para logging automático
+@Slf4j
 @Service
 @RequiredArgsConstructor
-@Transactional
 public class ItemService {
 
     private final ItemRepository itemRepository;
@@ -26,8 +25,13 @@ public class ItemService {
             throw new IllegalArgumentException("SupplierID é obrigatório");
         }
 
-        // Verifica se já existe
-        if (itemRepository.exists(request.getPartNumberID(), request.getSupplierID())) {
+        // Verifica se já existe (agora retorna Optional)
+        Optional<Item> existingItem = itemRepository.findById(
+                request.getPartNumberID(),
+                request.getSupplierID()
+        );
+
+        if (existingItem.isPresent()) {
             throw new IllegalStateException(
                     String.format("Item %s/%s já existe",
                             request.getPartNumberID(), request.getSupplierID())
@@ -48,7 +52,7 @@ public class ItemService {
         return ItemResponse.builder()
                 .partNumberID(savedItem.getPartNumberID())
                 .supplierID(savedItem.getSupplierID())
-                .createdAt(savedItem.getCreatedAt())
+                .createdAt(savedItem.getCreatedAt().toString()) // Convert Instant para String
                 .message("Item criado com sucesso")
                 .build();
     }
@@ -56,18 +60,20 @@ public class ItemService {
     public ItemResponse getItem(String partNumberID, String supplierID) {
         log.info("Buscando item: {} / {}", partNumberID, supplierID);
 
-        Item item = itemRepository.findById(partNumberID, supplierID);
+        Optional<Item> itemOptional = itemRepository.findById(partNumberID, supplierID);
 
-        if (item == null) {
+        if (itemOptional.isEmpty()) {
             throw new RuntimeException(
                     String.format("Item %s/%s não encontrado", partNumberID, supplierID)
             );
         }
 
+        Item item = itemOptional.get();
+
         return ItemResponse.builder()
                 .partNumberID(item.getPartNumberID())
                 .supplierID(item.getSupplierID())
-                .createdAt(item.getCreatedAt())
+                .createdAt(item.getCreatedAt().toString()) // Convert Instant para String
                 .message("Item encontrado")
                 .build();
     }

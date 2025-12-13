@@ -1,25 +1,54 @@
-// Item.java
+// Item.java (versão com Instant)
 package com.oryzem.backend.domain.aws.item;
 
-import com.amazonaws.services.dynamodbv2.datamodeling.*;
 import lombok.*;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortKey;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbAttribute;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
-@Data // Getters, Setters, toString, equals, hashCode
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder // Para criar objetos de forma fluente
-@DynamoDBTable(tableName = "VW216PA2-Project")
+@Builder
+@DynamoDbBean
 public class Item {
 
-    @DynamoDBHashKey(attributeName = "PartNumberID")
     private String partNumberID;
-
-    @DynamoDBRangeKey(attributeName = "SupplierID")
     private String supplierID;
 
-    @DynamoDBAttribute(attributeName = "CreatedAt")
     @Builder.Default
-    private String createdAt = LocalDateTime.now().toString();
+    private Instant createdAt = Instant.now();
+
+    @DynamoDbPartitionKey
+    @DynamoDbAttribute("PartNumberID")
+    public String getPartNumberID() {
+        return partNumberID;
+    }
+
+    @DynamoDbSortKey
+    @DynamoDbAttribute("SupplierID")
+    public String getSupplierID() {
+        return supplierID;
+    }
+
+    @DynamoDbAttribute("CreatedAt")
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
+
+    // Setters
+    public void setPartNumberID(String partNumberID) {
+        this.partNumberID = partNumberID;
+    }
+
+    public void setSupplierID(String supplierID) {
+        this.supplierID = supplierID;
+    }
+
+    public void setCreatedAt(Instant createdAt) {
+        this.createdAt = createdAt;
+    }
 }
