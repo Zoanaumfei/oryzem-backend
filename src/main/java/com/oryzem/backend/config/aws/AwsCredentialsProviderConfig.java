@@ -42,7 +42,7 @@ public class AwsCredentialsProviderConfig {
         }
 
         // 3. Credenciais padrão da AWS (Environment, EC2 IAM Role, etc.)
-        return create();
+        return DefaultCredentialsProvider.builder().build();
     }
 
     /**
