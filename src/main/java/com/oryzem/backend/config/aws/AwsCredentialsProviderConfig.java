@@ -5,6 +5,8 @@ import org.springframework.context.annotation.Configuration;
 import software.amazon.awssdk.auth.credentials.*;
 import software.amazon.awssdk.regions.Region;
 
+import static software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider.*;
+
 @Configuration
 public class AwsCredentialsProviderConfig {
 
@@ -40,7 +42,7 @@ public class AwsCredentialsProviderConfig {
         }
 
         // 3. Credenciais padrão da AWS (Environment, EC2 IAM Role, etc.)
-        return DefaultCredentialsProvider.create();
+        return create();
     }
 
     /**
