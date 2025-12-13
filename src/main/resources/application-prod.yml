@@ -1,0 +1,11 @@
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+aws:
+  dynamodb-local:
+    enabled: false
+
+  s3:
+    endpoint: https://s3.amazonaws.com  # AWS real

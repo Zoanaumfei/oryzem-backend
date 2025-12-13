@@ -1,0 +1,15 @@
+# Ignorar no Docker build
+.git/
+.gitignore
+.mvn/
+mvnw
+mvnw.cmd
+pom.xml
+target/
+*.log
+logs/
+.DS_Store
+.idea/
+*.iml
+README.md
+docker-compose*.yml

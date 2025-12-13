@@ -1,0 +1,11 @@
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+aws:
+  dynamodb-local:
+    enabled: true
+
+  s3:
+    endpoint: http://localhost:4566  # LocalStack
