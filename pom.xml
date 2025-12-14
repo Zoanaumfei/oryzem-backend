@@ -46,19 +46,6 @@
 			<scope>test</scope>
 		</dependency>
 
-		<!-- ******* DATABASES ********* -->
-		<dependency>
-			<groupId>com.microsoft.sqlserver</groupId>
-			<artifactId>mssql-jdbc</artifactId>
-			<scope>runtime</scope>
-		</dependency>
-		<dependency>
-			<groupId>com.h2database</groupId>
-			<artifactId>h2</artifactId>
-			<version>2.2.224</version>
-			<scope>runtime</scope>
-		</dependency>
-
 		<!-- ******* LOMBOK ********* -->
 		<dependency>
 			<groupId>org.projectlombok</groupId>
@@ -112,11 +99,6 @@
 		</dependency>
 
 		<!-- ******* OUTRAS DEPENDÊNCIAS ********* -->
-		<dependency>
-			<groupId>io.github.boostchicken</groupId>
-			<artifactId>spring-data-dynamodb</artifactId>
-			<version>5.2.1</version>
-		</dependency>
 
 		<dependency>
 			<groupId>io.swagger.core.v3</groupId>

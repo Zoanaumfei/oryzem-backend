@@ -1,3 +1,23 @@
+// Camada de Apresentação (API)
+// Função: Expõe endpoints REST e gerencia requisições HTTP.
+
+// Responsabilidades:
+// 1. DEFINIR ENDPOINTS: @PostMapping, @GetMapping
+// 2. RECEBER REQUESTS: @RequestBody, @PathVariable
+// 3. VALIDAÇÃO INICIAL: @Valid
+// 4. RETORNAR RESPONSES: ResponseEntity, códigos HTTP
+// 5. TRATAR ERROS: try-catch, respostas de erro
+
+// Exemplo do seu código:
+// @PostMapping
+// public ResponseEntity<?> createItem(@Valid @RequestBody ItemRequest request) {
+    // 1. Recebe JSON do frontend
+    // 2. Valida automaticamente (@Valid)
+    // 3. Chama Service para processar
+    // 4. Retorna HTTP 201 (Created) com dados
+// }
+// Analogia: É a recepção do hotel - recebe hóspedes (requests), direciona para os setores, entrega respostas.
+
 package com.oryzem.backend.domain.aws.item;
 
 import lombok.RequiredArgsConstructor;

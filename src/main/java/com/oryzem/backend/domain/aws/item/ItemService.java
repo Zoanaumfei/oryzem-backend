@@ -1,3 +1,21 @@
+// Camada de Negócio (Business Logic)
+//Função: Contém as regras de negócio e orquestra operações.
+
+// Responsabilidades:
+// 1. VALIDAÇÃO: Verifica se dados são válidos
+// 2. REGRAS DE NEGÓCIO: "Item já existe?", "Pode ser criado?"
+// 3. ORQUESTRAÇÃO: Coordena Repository, transforma dados
+// 4. LOGGING: Registra operações importantes
+//
+// Exemplo do seu código:
+//  public ItemResponse createItem(ItemRequest request) {
+//  1. Valida campos obrigatórios
+// 2. Verifica se item já existe (regra de negócio)
+// 3. Cria entidade Item
+// 4. Salva no Repository
+// 5. Cria resposta formatada
+//Analogia: É o chef de cozinha - recebe o pedido, aplica as receitas (regras), coordena preparação
+
 package com.oryzem.backend.domain.aws.item;
 
 import lombok.RequiredArgsConstructor;

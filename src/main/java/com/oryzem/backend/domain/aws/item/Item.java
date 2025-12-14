@@ -1,4 +1,16 @@
-// Item.java (versão com Instant)
+// Entidade
+// Função: Representa a estrutura de dados da sua tabela DynamoDB
+
+// É o ESPELHO da sua tabela DynamoDB:
+// Tabela: VW216PA2-Project
+// - PartNumberID (Partition Key)
+// - SupplierID (Sort Key)
+// - CreatedAt (Atributo adicional)
+
+// Responsabilidades:
+// 1. Mapear colunas da tabela para atributos Java
+// 2. Definir anotações do DynamoDB (chaves, tipos)
+// 3. Ser a "fonte da verdade" da estrutura de dados
 package com.oryzem.backend.domain.aws.item;
 
 import lombok.*;

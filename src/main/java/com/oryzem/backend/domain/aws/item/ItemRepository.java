@@ -1,3 +1,19 @@
+//Camada de Acesso a Dados (DAL)
+
+// Função: Interface entre sua aplicação e o banco de dados
+// Responsabilidades:
+// 1. Traduzir operações Java para comandos DynamoDB
+// 2. Esconder a complexidade do DynamoDB SDK
+// 3. Fornecer métodos CRUD simples para o Service usar
+
+// Métodos típicos:
+// - save()      → Salva/Atualiza um item
+// - findById()  → Busca por chave composta
+// - exists()    → Verifica existência
+// - delete()    → Remove um item
+
+//Analogia: É o garçom do restaurante - leva seus pedidos (queries) até a cozinha (banco de dados)
+
 package com.oryzem.backend.domain.aws.item;
 
 import lombok.RequiredArgsConstructor;
