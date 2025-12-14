@@ -55,7 +55,7 @@ target/
 !target/classes/  # Para multistage builds
 
 # Maven wrapper (não necessário na imagem final)
-.mvn/
+#.mvn/
 mvnw
 mvnw.cmd
 
