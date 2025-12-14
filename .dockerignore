@@ -54,10 +54,9 @@ target/
 !target/*.jar  # MAS mantém o JAR se estiver em estágio de build
 !target/classes/  # Para multistage builds
 
-# Maven wrapper (não necessário na imagem final)
 #.mvn/
-mvnw
-mvnw.cmd
+#mvnw
+#mvnw.cmd
 
 # Logs do Maven
 maven.log
