@@ -1,15 +1,148 @@
 # Ignorar no Docker build
-# .git/
-# .gitignore
-# .mvn/
-# mvnw
-# mvnw.cmd
-# pom.xml
-# target/
-# *.log
-# logs/
-# .DS_Store
-# .idea/
-# *.iml
-# README.md
-# docker-compose*.yml
+
+################################################################
+# 1. SISTEMA DE ARQUIVOS DO SISTEMA OPERACIONAL
+################################################################
+.DS_Store
+Thumbs.db
+desktop.ini
+*.log
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+################################################################
+# 2. IDEs e EDITORES
+################################################################
+# IntelliJ IDEA
+.idea/
+.idea_modules/
+*.iml
+*.iws
+*.ipr
+modules.xml
+*.eml
+out/
+production/
+*.ids
+compiler.xml
+jarRepositories.xml
+misc.xml
+vcs.xml
+workspace.xml
+
+################################################################
+# 3. CONTROLE DE VERSÃO (Git)
+################################################################
+.git/
+.gitignore
+.gitattributes
+.github/
+.gitlab/
+.gitmodules
+.gitkeep
+.svn/
+.hg/
+
+################################################################
+# 4. MAVEN - ARQUIVOS DE BUILD/TEMP
+################################################################
+# Diretório de build do Maven (CONTÉM O JAR FINAL)
+# MAS: NÃO ignore se estiver construindo com Docker multistage
+target/
+!target/*.jar  # MAS mantém o JAR se estiver em estágio de build
+!target/classes/  # Para multistage builds
+
+# Maven wrapper (não necessário na imagem final)
+.mvn/
+mvnw
+mvnw.cmd
+
+# Logs do Maven
+maven.log
+
+################################################################
+# 5. ARQUIVOS DO PROJETO SPRING BOOT (DEVELOPMENT)
+################################################################
+# Configurações locais
+application-local.properties
+application-dev.properties
+*-local.yml
+*-dev.yml
+
+# Arquivos de overrides
+*.bak
+*.orig
+*.backup
+
+################################################################
+# 6. DOCUMENTAÇÃO E RELATÓRIOS
+################################################################
+README.md  # Se não for necessário no container
+CHANGELOG.md
+LICENSE.txt  # A menos que precise na imagem
+docs/
+apidocs/
+javadoc/
+report/
+coverage/
+test-results/
+
+################################################################
+# 8. DOCKER ESPECÍFICO
+################################################################
+#.dockerignore
+#Dockerfile
+#docker-compose.yml
+#docker-compose.override.yml
+
+################################################################
+# 9. AWS E OUTRAS CREDENCIAIS (CRÍTICO!)
+################################################################
+*.pem
+*.key
+*.crt
+*.p12
+*.keystore
+*.jks
+credentials
+config
+.aws/
+.env
+.env.local
+.env.development
+secrets/
+
+################################################################
+# 10. ARQUIVOS DE TESTE
+################################################################
+src/test/
+!src/test/java/  # Mantém código fonte de teste se quiser rodar testes
+src/test/resources/
+*.test
+*.spec
+
+################################################################
+# 11. ARQUIVOS DE CONFIGURAÇÃO LOCAL
+################################################################
+# Configurações específicas de ambiente (não produção)
+src/main/resources/application-local.properties
+src/main/resources/application-dev.properties
+src/main/resources/application-test.properties
+
+# Arquivos YAML de desenvolvimento
+src/main/resources/application-local.yml
+src/main/resources/application-dev.yml
+
+################################################################
+# 12. CREDENCIAIS E SEGREDOS (CRÍTICO!)
+################################################################
+.key
+.pem
+.crt
+.p12
+.jks
+.keystore
+.env.*
+config/
