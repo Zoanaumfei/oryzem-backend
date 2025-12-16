@@ -1,17 +1,28 @@
-// ItemResponse.java - DTO de Saída (Data Transfer Object)
-// Função: Modela os dados que voltam para o frontend.
-// Responsabilidades:
-// 1. FORMATAR RESPOSTA: Campos que o frontend precisa
-// 2. ADICIONAR METADADOS: message, status, timestamps
-// 3. OCULTAR DADOS SENSÍVEIS: Nunca expor dados internos
-// 4. PADRÃO CONSISTENTE: Todas respostas seguem mesmo formato
-// Exemplo:
-// public class ItemResponse
-//    private String partNumberID
-//    private String supplierID
-//    private String createdAt  // Já formatada
-//    private String message    // "Item criado com sucesso"
-// Analogia: É o recibo da compra - mostra o que foi processado, com confirmação.
+/**
+ * ItemResponse – DTO de Saída (Data Transfer Object)
+ *
+ * <p>Responsável por modelar os dados retornados do backend para o frontend
+ * após operações relacionadas a Item.</p>
+ *
+ * <h3>Responsabilidades</h3>
+ * <ul>
+ *   <li>Formatar a resposta da API</li>
+ *   <li>Adicionar metadados de retorno (mensagens, status)</li>
+ *   <li>Ocultar dados sensíveis e detalhes internos</li>
+ *   <li>Garantir padrão consistente de respostas</li>
+ * </ul>
+ *
+ * <h3>Boas práticas</h3>
+ * <ul>
+ *   <li>Não conter regra de negócio</li>
+ *   <li>Não expor entidades do domínio</li>
+ *   <li>Servir apenas como contrato de saída</li>
+ * </ul>
+ *
+ * <p><strong>Analogia:</strong> Funciona como um recibo da operação,
+ * confirmando o que foi processado sem expor detalhes internos.</p>
+ */
+
 
 package com.oryzem.backend.domain.aws.item;
 

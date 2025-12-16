@@ -1,26 +1,9 @@
-// Camada de Negócio (Business Logic)
-//Função: Contém as regras de negócio e orquestra operações.
-
-// Responsabilidades:
-// 1. VALIDAÇÃO: Verifica se dados são válidos
-// 2. REGRAS DE NEGÓCIO: "Item já existe?", "Pode ser criado?"
-// 3. ORQUESTRAÇÃO: Coordena Repository, transforma dados
-// 4. LOGGING: Registra operações importantes
-//
-// Exemplo do seu código:
-//  public ItemResponse createItem(ItemRequest request) {
-//  1. Valida campos obrigatórios
-// 2. Verifica se item já existe (regra de negócio)
-// 3. Cria entidade Item
-// 4. Salva no Repository
-// 5. Cria resposta formatada
-//Analogia: É o chef de cozinha - recebe o pedido, aplica as receitas (regras), coordena preparação
-
 package com.oryzem.backend.domain.aws.item;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+
 import java.util.Optional;
 
 @Slf4j
@@ -34,65 +17,66 @@ public class ItemService {
         log.info("Criando item: {} / {}",
                 request.getPartNumberID(), request.getSupplierID());
 
-        // Validação
-        if (request.getPartNumberID() == null || request.getPartNumberID().trim().isEmpty()) {
-            throw new IllegalArgumentException("PartNumberID é obrigatório");
-        }
-
-        if (request.getSupplierID() == null || request.getSupplierID().trim().isEmpty()) {
-            throw new IllegalArgumentException("SupplierID é obrigatório");
-        }
-
-        // Verifica se já existe (agora retorna Optional)
-        Optional<Item> existingItem = itemRepository.findById(
+        // 🔹 Regra de negócio: item não pode existir
+        validateItemDoesNotExist(
                 request.getPartNumberID(),
                 request.getSupplierID()
         );
 
-        if (existingItem.isPresent()) {
-            throw new IllegalStateException(
-                    String.format("Item %s/%s já existe",
-                            request.getPartNumberID(), request.getSupplierID())
-            );
-        }
+        // 🔹 Converte DTO → Domínio
+        Item item = ItemMapper.toDomain(request);
 
-        // Cria e salva
-        Item item = Item.builder()
-                .partNumberID(request.getPartNumberID())
-                .supplierID(request.getSupplierID())
-                .build();
-
+        // 🔹 Persiste
         Item savedItem = itemRepository.save(item);
 
         log.info("Item criado com sucesso: {} / {}",
-                savedItem.getPartNumberID(), savedItem.getSupplierID());
+                savedItem.getPartNumberID(),
+                savedItem.getSupplierID());
 
-        return ItemResponse.builder()
-                .partNumberID(savedItem.getPartNumberID())
-                .supplierID(savedItem.getSupplierID())
-                .createdAt(savedItem.getCreatedAt().toString()) // Convert Instant para String
-                .message("Item criado com sucesso")
-                .build();
+        // 🔹 Converte Domínio → DTO
+        return ItemMapper.toResponse(
+                savedItem,
+                "Item criado com sucesso"
+        );
     }
 
     public ItemResponse getItem(String partNumberID, String supplierID) {
         log.info("Buscando item: {} / {}", partNumberID, supplierID);
 
-        Optional<Item> itemOptional = itemRepository.findById(partNumberID, supplierID);
+        Item item = itemRepository
+                .findById(partNumberID, supplierID)
+                .orElseThrow(() ->
+                        new RuntimeException(
+                                String.format(
+                                        "Item %s/%s não encontrado",
+                                        partNumberID,
+                                        supplierID
+                                )
+                        )
+                );
 
-        if (itemOptional.isEmpty()) {
-            throw new RuntimeException(
-                    String.format("Item %s/%s não encontrado", partNumberID, supplierID)
+        return ItemMapper.toResponse(item, "Item encontrado");
+    }
+
+    // ===============================
+    // Métodos privados (regras)
+    // ===============================
+
+    private void validateItemDoesNotExist(
+            String partNumberID,
+            String supplierID
+    ) {
+        Optional<Item> existingItem =
+                itemRepository.findById(partNumberID, supplierID);
+
+        if (existingItem.isPresent()) {
+            throw new IllegalStateException(
+                    String.format(
+                            "Item %s/%s já existe",
+                            partNumberID,
+                            supplierID
+                    )
             );
         }
-
-        Item item = itemOptional.get();
-
-        return ItemResponse.builder()
-                .partNumberID(item.getPartNumberID())
-                .supplierID(item.getSupplierID())
-                .createdAt(item.getCreatedAt().toString()) // Convert Instant para String
-                .message("Item encontrado")
-                .build();
     }
 }
