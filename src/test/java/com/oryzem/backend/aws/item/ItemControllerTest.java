@@ -49,6 +49,12 @@ class ItemControllerTest {
         ItemRequest request = new ItemRequest();
         request.setPartNumberID("PN123");
         request.setSupplierID("SUP456");
+        request.setProcessNumber("PROC-001");
+        request.setPartDescription("Part description");
+        request.setTbtVffDate("2026/01/16");
+        request.setTbtPvsDate("2026/01/20");
+        request.setTbt0sDate("2026/02/01");
+        request.setSopDate("2026/03/01");
 
         ItemResponse response = ItemResponse.builder()
                 .partNumberID("PN123")
@@ -76,6 +82,12 @@ class ItemControllerTest {
         ItemRequest request = new ItemRequest();
         request.setPartNumberID("");
         request.setSupplierID("SUP456");
+        request.setProcessNumber("PROC-001");
+        request.setPartDescription("Part description");
+        request.setTbtVffDate("2026/01/16");
+        request.setTbtPvsDate("2026/01/20");
+        request.setTbt0sDate("2026/02/01");
+        request.setSopDate("2026/03/01");
 
         mockMvc.perform(post("/api/v1/items")
                         .with(jwt())
@@ -90,6 +102,12 @@ class ItemControllerTest {
         ItemRequest request = new ItemRequest();
         request.setPartNumberID("PN123");
         request.setSupplierID("SUP456");
+        request.setProcessNumber("PROC-001");
+        request.setPartDescription("Part description");
+        request.setTbtVffDate("2026/01/16");
+        request.setTbtPvsDate("2026/01/20");
+        request.setTbt0sDate("2026/02/01");
+        request.setSopDate("2026/03/01");
 
         when(itemService.createItem(any()))
                 .thenThrow(new IllegalStateException("Item já existe"));

@@ -1,39 +1,59 @@
-// DTO de Entrada (Data Transfer Object)
-// Função: Modela os dados que chegam do frontend.
-// Responsabilidades:
-// 1. DEFINIR CONTRATO: Quais campos o frontend deve enviar
-// 2. VALIDAÇÃO: @NotBlank, @Size, @Pattern
-// 3. SEGURANÇA: Separa dados da API da entidade do banco
-// 4. SIMPLIFICAÇÃO: Pode ter menos campos que a entidade
-
-//  Exemplo:
-// public class ItemRequest
-// @NotBlank
-// private String partNumberID;  // Obrigatório
-//
-// @NotBlank
-// private String supplierID;    // Obrigatório
-//
-// NÃO tem createdAt - é gerado no servidor!
-// Analogia: É o formulário de cadastro - define o que o usuário precisa preencher.
-
 package com.oryzem.backend.domain.aws.item;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class ItemRequest {
-    @NotBlank(message = "PartNumberID é obrigatório")
-    @Size(max = 50, message = "PartNumberID deve ter no máximo 50 caracteres")
+    @NotBlank(message = "PartNumberID is required")
+    @Size(max = 50, message = "PartNumberID must be at most 50 characters")
     private String partNumberID;
 
-    @NotBlank(message = "SupplierID é obrigatório")
-    @Size(max = 50, message = "SupplierID deve ter no máximo 50 caracteres")
+    @NotBlank(message = "SupplierID is required")
+    @Size(max = 50, message = "SupplierID must be at most 50 characters")
     private String supplierID;
-}
 
+    @NotBlank(message = "ProcessNumber is required")
+    @Size(max = 100, message = "ProcessNumber must be at most 100 characters")
+    private String processNumber;
+
+    @NotBlank(message = "PartDescription is required")
+    @Size(max = 500, message = "PartDescription must be at most 500 characters")
+    private String partDescription;
+
+    @NotBlank(message = "TbtVffDate is required")
+    @Pattern(
+            regexp = "^\\d{4}/\\d{2}/\\d{2}$",
+            message = "TbtVffDate must be YYYY/MM/DD"
+    )
+    private String tbtVffDate;
+
+    @NotBlank(message = "TbtPvsDate is required")
+    @Pattern(
+            regexp = "^\\d{4}/\\d{2}/\\d{2}$",
+            message = "TbtPvsDate must be YYYY/MM/DD"
+    )
+    private String tbtPvsDate;
+
+    @NotBlank(message = "Tbt0sDate is required")
+    @Pattern(
+            regexp = "^\\d{4}/\\d{2}/\\d{2}$",
+            message = "Tbt0sDate must be YYYY/MM/DD"
+    )
+    private String tbt0sDate;
+
+    @NotBlank(message = "SopDate is required")
+    @Pattern(
+            regexp = "^\\d{4}/\\d{2}/\\d{2}$",
+            message = "SopDate must be YYYY/MM/DD"
+    )
+    private String sopDate;
+}

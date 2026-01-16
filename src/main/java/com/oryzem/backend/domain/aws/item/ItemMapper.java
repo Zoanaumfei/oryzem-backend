@@ -10,6 +10,12 @@ public class ItemMapper {
         return Item.builder()
                 .partNumberID(request.getPartNumberID())
                 .supplierID(request.getSupplierID())
+                .processNumber(request.getProcessNumber())
+                .partDescription(request.getPartDescription())
+                .tbtVffDate(request.getTbtVffDate())
+                .tbtPvsDate(request.getTbtPvsDate())
+                .tbt0sDate(request.getTbt0sDate())
+                .sopDate(request.getSopDate())
                 .build();
     }
 
@@ -17,6 +23,12 @@ public class ItemMapper {
         return ItemResponse.builder()
                 .partNumberID(item.getPartNumberID())
                 .supplierID(item.getSupplierID())
+                .processNumber(item.getProcessNumber())
+                .partDescription(item.getPartDescription())
+                .tbtVffDate(item.getTbtVffDate())
+                .tbtPvsDate(item.getTbtPvsDate())
+                .tbt0sDate(item.getTbt0sDate())
+                .sopDate(item.getSopDate())
                 .createdAt(
                         item.getCreatedAt() != null
                                 ? item.getCreatedAt().toString()

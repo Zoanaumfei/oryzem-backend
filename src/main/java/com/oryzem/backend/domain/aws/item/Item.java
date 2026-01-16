@@ -30,6 +30,12 @@ public class Item {
 
     private String partNumberID;
     private String supplierID;
+    private String processNumber;
+    private String partDescription;
+    private String tbtVffDate;
+    private String tbtPvsDate;
+    private String tbt0sDate;
+    private String sopDate;
 
     @Builder.Default
     private Instant createdAt = Instant.now();
@@ -53,6 +59,36 @@ public class Item {
         return createdAt;
     }
 
+    @DynamoDbAttribute("ProcessNumber")
+    public String getProcessNumber() {
+        return processNumber;
+    }
+
+    @DynamoDbAttribute("PartDescription")
+    public String getPartDescription() {
+        return partDescription;
+    }
+
+    @DynamoDbAttribute("TbtVffDate")
+    public String getTbtVffDate() {
+        return tbtVffDate;
+    }
+
+    @DynamoDbAttribute("TbtPvsDate")
+    public String getTbtPvsDate() {
+        return tbtPvsDate;
+    }
+
+    @DynamoDbAttribute("Tbt0sDate")
+    public String getTbt0sDate() {
+        return tbt0sDate;
+    }
+
+    @DynamoDbAttribute("SopDate")
+    public String getSopDate() {
+        return sopDate;
+    }
+
     @DynamoDbAttribute("UpdatedAt")
     public Instant getUpdatedAt() {
         return updatedAt;
@@ -74,6 +110,30 @@ public class Item {
 
     public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public void setProcessNumber(String processNumber) {
+        this.processNumber = processNumber;
+    }
+
+    public void setPartDescription(String partDescription) {
+        this.partDescription = partDescription;
+    }
+
+    public void setTbtVffDate(String tbtVffDate) {
+        this.tbtVffDate = tbtVffDate;
+    }
+
+    public void setTbtPvsDate(String tbtPvsDate) {
+        this.tbtPvsDate = tbtPvsDate;
+    }
+
+    public void setTbt0sDate(String tbt0sDate) {
+        this.tbt0sDate = tbt0sDate;
+    }
+
+    public void setSopDate(String sopDate) {
+        this.sopDate = sopDate;
     }
 
     public void setUpdatedAt(Instant updatedAt) {

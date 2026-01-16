@@ -38,6 +38,12 @@ import lombok.NoArgsConstructor;
 public class ItemResponse {
     private String partNumberID;
     private String supplierID;
+    private String processNumber;
+    private String partDescription;
+    private String tbtVffDate;
+    private String tbtPvsDate;
+    private String tbt0sDate;
+    private String sopDate;
     private String createdAt;
     private String updatedAt;
     private String status;
