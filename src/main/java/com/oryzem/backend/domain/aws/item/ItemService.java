@@ -4,7 +4,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.util.Optional;
+import com.oryzem.backend.domain.aws.item.exception.ItemNotFoundException;
 
 @Slf4j
 @Service
@@ -25,6 +27,8 @@ public class ItemService {
 
         // 🔹 Converte DTO → Domínio
         Item item = ItemMapper.toDomain(request);
+        item.setStatus(ItemStatus.SAVED);
+        item.setUpdatedAt(Instant.now());
 
         // 🔹 Persiste
         Item savedItem = itemRepository.save(item);
@@ -46,7 +50,7 @@ public class ItemService {
         Item item = itemRepository
                 .findById(partNumberID, supplierID)
                 .orElseThrow(() ->
-                        new RuntimeException(
+                        new ItemNotFoundException(
                                 String.format(
                                         "Item %s/%s não encontrado",
                                         partNumberID,

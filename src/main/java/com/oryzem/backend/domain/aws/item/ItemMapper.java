@@ -22,6 +22,16 @@ public class ItemMapper {
                                 ? item.getCreatedAt().toString()
                                 : null
                 )
+                .updatedAt(
+                        item.getUpdatedAt() != null
+                                ? item.getUpdatedAt().toString()
+                                : null
+                )
+                .status(
+                        item.getStatus() != null
+                                ? item.getStatus().name()
+                                : null
+                )
                 .message(message)
                 .build();
     }

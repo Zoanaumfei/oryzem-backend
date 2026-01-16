@@ -33,6 +33,8 @@ public class Item {
 
     @Builder.Default
     private Instant createdAt = Instant.now();
+    private Instant updatedAt;
+    private ItemStatus status;
 
     @DynamoDbPartitionKey
     @DynamoDbAttribute("PartNumberID")
@@ -51,6 +53,16 @@ public class Item {
         return createdAt;
     }
 
+    @DynamoDbAttribute("UpdatedAt")
+    public Instant getUpdatedAt() {
+        return updatedAt;
+    }
+
+    @DynamoDbAttribute("Status")
+    public ItemStatus getStatus() {
+        return status;
+    }
+
     // Setters
     public void setPartNumberID(String partNumberID) {
         this.partNumberID = partNumberID;
@@ -62,5 +74,13 @@ public class Item {
 
     public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public void setUpdatedAt(Instant updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
+    public void setStatus(ItemStatus status) {
+        this.status = status;
     }
 }

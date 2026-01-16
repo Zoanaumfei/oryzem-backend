@@ -39,5 +39,7 @@ public class ItemResponse {
     private String partNumberID;
     private String supplierID;
     private String createdAt;
+    private String updatedAt;
+    private String status;
     private String message;
 }

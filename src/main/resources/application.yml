@@ -3,7 +3,6 @@ spring:
   config:
     activate:
       on-profile: prod
-
 server:
   port: ${PORT:8080}
   forward-headers-strategy: framework  # importante para proxies
@@ -36,3 +35,6 @@ springdoc:
   swagger-ui:
     path: /swagger-ui.html
     enabled: false  # desativar Swagger em produção
+
+
+

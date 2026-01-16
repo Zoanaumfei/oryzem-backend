@@ -42,6 +42,7 @@ public class DynamoDBConfig {
     }
 
     @Bean
+    @Profile("!test")
     public DynamoDbClient dynamoDbClient() {
         var builder = DynamoDbClient.builder()
                 .region(region)

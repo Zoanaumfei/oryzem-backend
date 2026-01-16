@@ -24,20 +24,22 @@ public class AwsCredentialsProviderConfig {
     public AwsCredentialsProvider awsCredentialsProvider() {
         // Prioridade de resolução de credenciais:
         // 1. Credenciais explícitas no application.yml
-        if (awsProperties.getCredentials().getAccessKey() != null &&
-                awsProperties.getCredentials().getSecretKey() != null) {
+        if (awsProperties.getAccessKeyId() != null &&
+                !awsProperties.getAccessKeyId().isBlank() &&
+                awsProperties.getSecretAccessKey() != null &&
+                !awsProperties.getSecretAccessKey().isBlank()) {
             return StaticCredentialsProvider.create(
                     AwsBasicCredentials.create(
-                            awsProperties.getCredentials().getAccessKey(),
-                            awsProperties.getCredentials().getSecretKey()
+                            awsProperties.getAccessKeyId(),
+                            awsProperties.getSecretAccessKey()
                     )
             );
         }
 
         // 2. Profile específico do arquivo ~/.aws/credentials
-        if (awsProperties.getCredentials().getProfile() != null) {
+        if (awsProperties.getProfile() != null) {
             return ProfileCredentialsProvider.create(
-                    awsProperties.getCredentials().getProfile()
+                    awsProperties.getProfile()
             );
         }
 

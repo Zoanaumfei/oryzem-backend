@@ -10,12 +10,8 @@ import org.springframework.stereotype.Component;
 public class AwsProperties {
 
     private String region = "us-east-1";
-    private Credentials credentials = new Credentials();
+    private String accessKeyId;
+    private String secretAccessKey;
+    private String profile;  // Para usar ~/.aws/credentials
 
-    @Data
-    public static class Credentials {
-        private String accessKey;
-        private String secretKey;
-        private String profile;  // Para usar ~/.aws/credentials
-    }
 }

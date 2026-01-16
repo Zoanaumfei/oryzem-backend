@@ -6,23 +6,27 @@ import com.oryzem.backend.domain.aws.item.ItemRequest;
 import com.oryzem.backend.domain.aws.item.ItemResponse;
 import com.oryzem.backend.domain.aws.item.ItemService;
 import com.oryzem.backend.domain.aws.item.exception.ItemNotFoundException;
+import com.oryzem.backend.config.aws.SecurityConfig;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(ItemController.class)
 @AutoConfigureMockMvc
+@Import(SecurityConfig.class)
 class ItemControllerTest {
 
     @Autowired
@@ -56,6 +60,7 @@ class ItemControllerTest {
         when(itemService.createItem(any())).thenReturn(response);
 
         mockMvc.perform(post("/api/v1/items")
+                        .with(jwt())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
@@ -73,6 +78,7 @@ class ItemControllerTest {
         request.setSupplierID("SUP456");
 
         mockMvc.perform(post("/api/v1/items")
+                        .with(jwt())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
@@ -89,6 +95,7 @@ class ItemControllerTest {
                 .thenThrow(new IllegalStateException("Item já existe"));
 
         mockMvc.perform(post("/api/v1/items")
+                        .with(jwt())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isConflict());
@@ -112,7 +119,8 @@ class ItemControllerTest {
                 .thenReturn(response);
 
         mockMvc.perform(get("/api/v1/items/{partNumberID}/{supplierID}",
-                        "PN123", "SUP456"))
+                        "PN123", "SUP456")
+                        .with(jwt()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.partNumberID").value("PN123"))
                 .andExpect(jsonPath("$.supplierID").value("SUP456"))
@@ -123,10 +131,11 @@ class ItemControllerTest {
     void shouldReturn404WhenItemNotFound() throws Exception {
 
         when(itemService.getItem(eq("PN999"), eq("SUP999")))
-                .thenThrow(new ItemNotFoundException("Item não encontrado","Item não encontrado"));
+                .thenThrow(new ItemNotFoundException("Item nao encontrado"));
 
         mockMvc.perform(get("/api/v1/items/{partNumberID}/{supplierID}",
-                        "PN999", "SUP999"))
+                        "PN999", "SUP999")
+                        .with(jwt()))
                 .andExpect(status().isNotFound());
     }
 }

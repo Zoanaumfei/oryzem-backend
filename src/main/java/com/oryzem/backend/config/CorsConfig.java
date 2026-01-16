@@ -3,7 +3,6 @@ package com.oryzem.backend.config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
-import org.springframework.web.servlet.config.annotation.PathMatchConfigurer;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
@@ -14,16 +13,17 @@ public class CorsConfig {
         return new WebMvcConfigurer() {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
-                registry.addMapping("/api/**")  // Aplica a todos endpoints /api/*
+                registry.addMapping("/api/**")
                         .allowedOrigins(
-                                "https://oryzem.com",       // Seu domínio principal
-                                "https://www.oryzem.com"   // Com www
-
+                                "https://oryzem.com",
+                                "https://www.oryzem.com",
+                                "http://localhost:5173",
+                                "https://localhost:5173"
                         )
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
-                        .allowedHeaders("*")
+                        .allowedHeaders("Authorization", "Content-Type")
                         .allowCredentials(true)
-                        .maxAge(3600);  // Cache de pré-voo por 1 hora
+                        .maxAge(3600);
             }
         };
     }

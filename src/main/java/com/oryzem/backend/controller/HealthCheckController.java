@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
@@ -134,7 +135,7 @@ public class HealthCheckController {
 
     @GetMapping("/dynamodb/table/{tableName}")
     @Operation(summary = "Verificar tabela específica")
-    public ResponseEntity<Map<String, Object>> checkTable(String tableName) {
+    public ResponseEntity<Map<String, Object>> checkTable(@PathVariable String tableName) {
         Map<String, Object> response = new HashMap<>();
 
         try {
