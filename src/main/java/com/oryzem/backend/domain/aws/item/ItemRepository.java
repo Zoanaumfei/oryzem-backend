@@ -91,4 +91,13 @@ public class ItemRepository {
                 .forEach(items::add);
         return items;
     }
+
+    public List<Item> findAll() {
+        log.info("Listando todos os itens");
+        List<Item> items = new ArrayList<>();
+        getItemTable().scan()
+                .items()
+                .forEach(items::add);
+        return items;
+    }
 }

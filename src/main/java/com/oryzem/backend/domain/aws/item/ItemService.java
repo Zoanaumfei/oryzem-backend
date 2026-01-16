@@ -70,6 +70,13 @@ public class ItemService {
                 .toList();
     }
 
+    public List<ItemResponse> getAllItems() {
+        List<Item> items = itemRepository.findAll();
+        return items.stream()
+                .map(item -> ItemMapper.toResponse(item, "Item listado"))
+                .toList();
+    }
+
     // ===============================
     // Métodos privados (regras)
     // ===============================

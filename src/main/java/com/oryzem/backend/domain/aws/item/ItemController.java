@@ -29,6 +29,12 @@ public class ItemController {
                 .body(response);
     }
 
+    @GetMapping
+    public ResponseEntity<List<ItemResponse>> getAllItems() {
+        List<ItemResponse> response = itemService.getAllItems();
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping("/{partNumberID}/{supplierID}")
     public ResponseEntity<ItemResponse> getItem(
             @PathVariable String partNumberID,
