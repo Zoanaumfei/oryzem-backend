@@ -80,7 +80,8 @@ public class ItemRepository {
     public List<Item> findAllByStatus(ItemStatus status) {
         log.info("Listando itens com status: {}", status);
         Expression filter = Expression.builder()
-                .expression("Status = :status")
+                .expression("#status = :status")
+                .putExpressionName("#status", "Status")
                 .putExpressionValue(":status", AttributeValue.builder().s(status.name()).build())
                 .build();
 
