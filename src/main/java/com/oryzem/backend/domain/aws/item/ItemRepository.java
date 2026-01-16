@@ -21,9 +21,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
+import software.amazon.awssdk.enhanced.dynamodb.Expression;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 @Slf4j
@@ -71,5 +75,19 @@ public class ItemRepository {
                 .build();
 
         getItemTable().deleteItem(key);
+    }
+
+    public List<Item> findAllByStatus(ItemStatus status) {
+        log.info("Listando itens com status: {}", status);
+        Expression filter = Expression.builder()
+                .expression("Status = :status")
+                .putExpressionValue(":status", AttributeValue.builder().s(status.name()).build())
+                .build();
+
+        List<Item> items = new ArrayList<>();
+        getItemTable().scan(r -> r.filterExpression(filter))
+                .items()
+                .forEach(items::add);
+        return items;
     }
 }

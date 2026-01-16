@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
+import java.util.List;
 
 @Slf4j
 @RestController
@@ -39,6 +40,13 @@ public class ItemController {
         log.info("GET /api/v1/items/{}/{} - Sucesso",
                 partNumberID, supplierID);
 
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/status/{status}")
+    public ResponseEntity<List<ItemResponse>> getItemsByStatus(
+            @PathVariable ItemStatus status) {
+        List<ItemResponse> response = itemService.getItemsByStatus(status);
         return ResponseEntity.ok(response);
     }
 }

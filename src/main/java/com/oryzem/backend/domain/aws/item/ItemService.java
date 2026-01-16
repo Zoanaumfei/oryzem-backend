@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import com.oryzem.backend.domain.aws.item.exception.ItemNotFoundException;
 
@@ -60,6 +61,13 @@ public class ItemService {
                 );
 
         return ItemMapper.toResponse(item, "Item encontrado");
+    }
+
+    public List<ItemResponse> getItemsByStatus(ItemStatus status) {
+        List<Item> items = itemRepository.findAllByStatus(status);
+        return items.stream()
+                .map(item -> ItemMapper.toResponse(item, "Item listado"))
+                .toList();
     }
 
     // ===============================
