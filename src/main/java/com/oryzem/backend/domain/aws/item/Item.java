@@ -1,15 +1,15 @@
 // Entidade
-// Função: Representa a estrutura de dados da sua tabela DynamoDB
+// Funcao: Representa a estrutura de dados da sua tabela DynamoDB
 
-// É o ESPELHO da sua tabela DynamoDB:
-// Tabela: VW216PA2-Project
-// - PartNumberID (Partition Key)
-// - SupplierID (Sort Key)
+// E o ESPELHO da sua tabela DynamoDB:
+// Tabela: VW216-TCROSSPA2
+// - SupplierID (Partition Key)
+// - PartNumber#Version (Sort Key)
 // - CreatedAt (Atributo adicional)
 
 // Responsabilidades:
 // 1. Mapear colunas da tabela para atributos Java
-// 2. Definir anotações do DynamoDB (chaves, tipos)
+// 2. Definir anotacoes do DynamoDB (chaves, tipos)
 // 3. Ser a "fonte da verdade" da estrutura de dados
 package com.oryzem.backend.domain.aws.item;
 
@@ -28,7 +28,7 @@ import java.time.Instant;
 @DynamoDbBean
 public class Item {
 
-    private String partNumberID;
+    private String partNumberVersion;
     private String supplierID;
     private String processNumber;
     private String partDescription;
@@ -42,13 +42,13 @@ public class Item {
     private Instant updatedAt;
     private ItemStatus status;
 
-    @DynamoDbPartitionKey
-    @DynamoDbAttribute("PartNumberID")
-    public String getPartNumberID() {
-        return partNumberID;
+    @DynamoDbSortKey
+    @DynamoDbAttribute("PartNumber#Version")
+    public String getPartNumberVersion() {
+        return partNumberVersion;
     }
 
-    @DynamoDbSortKey
+    @DynamoDbPartitionKey
     @DynamoDbAttribute("SupplierID")
     public String getSupplierID() {
         return supplierID;
@@ -100,8 +100,8 @@ public class Item {
     }
 
     // Setters
-    public void setPartNumberID(String partNumberID) {
-        this.partNumberID = partNumberID;
+    public void setPartNumberVersion(String partNumberVersion) {
+        this.partNumberVersion = partNumberVersion;
     }
 
     public void setSupplierID(String supplierID) {

@@ -14,14 +14,14 @@ class ItemMapperTest {
     void shouldConvertRequestToDomain() {
         // given
         ItemRequest request = new ItemRequest();
-        request.setPartNumberID("PN123");
+        request.setPartNumberVersion("PN123");
         request.setSupplierID("SUP456");
 
         // when
         Item item = ItemMapper.toDomain(request);
 
         // then
-        assertThat(item.getPartNumberID()).isEqualTo("PN123");
+        assertThat(item.getPartNumberVersion()).isEqualTo("PN123");
         assertThat(item.getSupplierID()).isEqualTo("SUP456");
     }
 
@@ -29,7 +29,7 @@ class ItemMapperTest {
     void shouldConvertDomainToResponse() {
         // given
         Item item = Item.builder()
-                .partNumberID("PN123")
+                .partNumberVersion("PN123")
                 .supplierID("SUP456")
                 .build();
 
@@ -38,8 +38,10 @@ class ItemMapperTest {
                 ItemMapper.toResponse(item, "Item criado com sucesso");
 
         // then
-        assertThat(response.getPartNumberID()).isEqualTo("PN123");
+        assertThat(response.getPartNumberVersion()).isEqualTo("PN123");
         assertThat(response.getSupplierID()).isEqualTo("SUP456");
         assertThat(response.getMessage()).isEqualTo("Item criado com sucesso");
     }
 }
+
+

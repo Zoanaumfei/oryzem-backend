@@ -8,7 +8,7 @@ public class ItemMapper {
 
     public static Item toDomain(ItemRequest request) {
         return Item.builder()
-                .partNumberID(request.getPartNumberID())
+                .partNumberVersion(request.getPartNumberVersion())
                 .supplierID(request.getSupplierID())
                 .processNumber(request.getProcessNumber())
                 .partDescription(request.getPartDescription())
@@ -21,7 +21,7 @@ public class ItemMapper {
 
     public static ItemResponse toResponse(Item item, String message) {
         return ItemResponse.builder()
-                .partNumberID(item.getPartNumberID())
+                .partNumberVersion(item.getPartNumberVersion())
                 .supplierID(item.getSupplierID())
                 .processNumber(item.getProcessNumber())
                 .partDescription(item.getPartDescription())
@@ -48,3 +48,5 @@ public class ItemMapper {
                 .build();
     }
 }
+
+

@@ -38,40 +38,40 @@ public class ItemRepository {
     private final DynamoDbEnhancedClient enhancedClient;
 
     // Nome da sua tabela DynamoDB
-    private static final String TABLE_NAME = "VW216PA2-Project";
+    private static final String TABLE_NAME = "VW216-TCROSSPA2";
 
     private DynamoDbTable<Item> getItemTable() {
         return enhancedClient.table(TABLE_NAME, TableSchema.fromBean(Item.class));
     }
 
     public Item save(Item item) {
-        log.info("Salvando item: {}/{}", item.getPartNumberID(), item.getSupplierID());
+        log.info("Salvando item: {}/{}", item.getSupplierID(), item.getPartNumberVersion());
         getItemTable().putItem(item);
         return item;
     }
 
-    public Optional<Item> findById(String partNumberID, String supplierID) {
-        log.info("Buscando item: {}/{}", partNumberID, supplierID);
+    public Optional<Item> findById(String supplierID, String partNumberVersion) {
+        log.info("Buscando item: {}/{}", supplierID, partNumberVersion);
 
         Key key = Key.builder()
-                .partitionValue(partNumberID)
-                .sortValue(supplierID)
+                .partitionValue(supplierID)
+                .sortValue(partNumberVersion)
                 .build();
 
         Item item = getItemTable().getItem(key);
         return Optional.ofNullable(item);
     }
 
-    public boolean exists(String partNumberID, String supplierID) {
-        return findById(partNumberID, supplierID).isPresent();
+    public boolean exists(String supplierID, String partNumberVersion) {
+        return findById(supplierID, partNumberVersion).isPresent();
     }
 
-    public void delete(String partNumberID, String supplierID) {
-        log.info("Deletando item: {}/{}", partNumberID, supplierID);
+    public void delete(String supplierID, String partNumberVersion) {
+        log.info("Deletando item: {}/{}", supplierID, partNumberVersion);
 
         Key key = Key.builder()
-                .partitionValue(partNumberID)
-                .sortValue(supplierID)
+                .partitionValue(supplierID)
+                .sortValue(partNumberVersion)
                 .build();
 
         getItemTable().deleteItem(key);
@@ -101,3 +101,7 @@ public class ItemRepository {
         return items;
     }
 }
+
+
+
+

@@ -47,7 +47,7 @@ class ItemControllerTest {
     void shouldCreateItemSuccessfully() throws Exception {
 
         ItemRequest request = new ItemRequest();
-        request.setPartNumberID("PN123");
+        request.setPartNumberVersion("PN123");
         request.setSupplierID("SUP456");
         request.setProcessNumber("PROC-001");
         request.setPartDescription("Part description");
@@ -57,7 +57,7 @@ class ItemControllerTest {
         request.setSopDate("2026/03/01");
 
         ItemResponse response = ItemResponse.builder()
-                .partNumberID("PN123")
+                .partNumberVersion("PN123")
                 .supplierID("SUP456")
                 .createdAt("2025-12-16T20:30:00Z")
                 .message("Item criado com sucesso")
@@ -70,7 +70,7 @@ class ItemControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.partNumberID").value("PN123"))
+                .andExpect(jsonPath("$.partNumberVersion").value("PN123"))
                 .andExpect(jsonPath("$.supplierID").value("SUP456"))
                 .andExpect(jsonPath("$.message").value("Item criado com sucesso"));
     }
@@ -78,9 +78,9 @@ class ItemControllerTest {
     @Test
     void shouldReturn400WhenRequestIsInvalid() throws Exception {
 
-        // partNumberID vazio → viola @NotBlank
+        // partNumberVersion vazio → viola @NotBlank
         ItemRequest request = new ItemRequest();
-        request.setPartNumberID("");
+        request.setPartNumberVersion("");
         request.setSupplierID("SUP456");
         request.setProcessNumber("PROC-001");
         request.setPartDescription("Part description");
@@ -100,7 +100,7 @@ class ItemControllerTest {
     void shouldReturn409WhenItemAlreadyExists() throws Exception {
 
         ItemRequest request = new ItemRequest();
-        request.setPartNumberID("PN123");
+        request.setPartNumberVersion("PN123");
         request.setSupplierID("SUP456");
         request.setProcessNumber("PROC-001");
         request.setPartDescription("Part description");
@@ -120,27 +120,27 @@ class ItemControllerTest {
     }
 
     /* =========================================================
-       GET /api/v1/items/{partNumberID}/{supplierID}
+       GET /api/v1/items/{supplierID}/{partNumberVersion}
        ========================================================= */
 
     @Test
     void shouldGetItemSuccessfully() throws Exception {
 
         ItemResponse response = ItemResponse.builder()
-                .partNumberID("PN123")
+                .partNumberVersion("PN123")
                 .supplierID("SUP456")
                 .createdAt("2025-12-16T20:30:00Z")
                 .message("Item encontrado")
                 .build();
 
-        when(itemService.getItem("PN123", "SUP456"))
+        when(itemService.getItem("SUP456", "PN123"))
                 .thenReturn(response);
 
-        mockMvc.perform(get("/api/v1/items/{partNumberID}/{supplierID}",
-                        "PN123", "SUP456")
+        mockMvc.perform(get("/api/v1/items/{supplierID}/{partNumberVersion}",
+                        "SUP456", "PN123")
                         .with(jwt()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.partNumberID").value("PN123"))
+                .andExpect(jsonPath("$.partNumberVersion").value("PN123"))
                 .andExpect(jsonPath("$.supplierID").value("SUP456"))
                 .andExpect(jsonPath("$.message").value("Item encontrado"));
     }
@@ -148,12 +148,18 @@ class ItemControllerTest {
     @Test
     void shouldReturn404WhenItemNotFound() throws Exception {
 
-        when(itemService.getItem(eq("PN999"), eq("SUP999")))
-                .thenThrow(new ItemNotFoundException("Item nao encontrado"));
+        when(itemService.getItem(eq("SUP999"), eq("PN999")))
+                .thenThrow(new ItemNotFoundException("SUP999", "PN999"));
 
-        mockMvc.perform(get("/api/v1/items/{partNumberID}/{supplierID}",
-                        "PN999", "SUP999")
+        mockMvc.perform(get("/api/v1/items/{supplierID}/{partNumberVersion}",
+                        "SUP999", "PN999")
                         .with(jwt()))
                 .andExpect(status().isNotFound());
     }
 }
+
+
+
+
+
+

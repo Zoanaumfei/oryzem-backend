@@ -35,16 +35,16 @@ public class ItemController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/{partNumberID}/{supplierID}")
+    @GetMapping("/{supplierID}/{partNumberVersion}")
     public ResponseEntity<ItemResponse> getItem(
-            @PathVariable String partNumberID,
-            @PathVariable String supplierID) {
+            @PathVariable String supplierID,
+            @PathVariable String partNumberVersion) {
 
         ItemResponse response =
-                itemService.getItem(partNumberID, supplierID);
+                itemService.getItem(supplierID, partNumberVersion);
 
         log.info("GET /api/v1/items/{}/{} - Sucesso",
-                partNumberID, supplierID);
+                supplierID, partNumberVersion);
 
         return ResponseEntity.ok(response);
     }
@@ -56,3 +56,10 @@ public class ItemController {
         return ResponseEntity.ok(response);
     }
 }
+
+
+
+
+
+
+

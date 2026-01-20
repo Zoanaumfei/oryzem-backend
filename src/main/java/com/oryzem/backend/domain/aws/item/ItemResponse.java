@@ -36,7 +36,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Builder
 public class ItemResponse {
-    private String partNumberID;
+    private String partNumberVersion;
     private String supplierID;
     private String processNumber;
     private String partDescription;
@@ -49,3 +49,4 @@ public class ItemResponse {
     private String status;
     private String message;
 }
+

@@ -1,16 +1,11 @@
 package com.oryzem.backend.domain.aws.item.exception;
 
 public class ItemNotFoundException extends RuntimeException {
-    public ItemNotFoundException(String message) {
-        super(message);
-    }
-
-
-    public ItemNotFoundException(String partNumberID, String supplierID) {
+    public ItemNotFoundException(String supplierID, String partNumberVersion) {
         super(String.format(
-                "Item %s/%s não encontrado",
-                partNumberID,
-                supplierID
+                "Item %s/%s nao encontrado",
+                supplierID,
+                partNumberVersion
         ));
     }
 }

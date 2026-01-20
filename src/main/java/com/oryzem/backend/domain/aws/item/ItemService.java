@@ -23,12 +23,12 @@ public class ItemService {
 
     public ItemResponse createItem(ItemRequest request) {
         log.info("Criando item: {} / {}",
-                request.getPartNumberID(), request.getSupplierID());
+                request.getSupplierID(), request.getPartNumberVersion());
 
         // Regra de negocio: item nao pode existir
         validateItemDoesNotExist(
-                request.getPartNumberID(),
-                request.getSupplierID()
+                request.getSupplierID(),
+                request.getPartNumberVersion()
         );
 
         // Converte DTO -> Dominio
@@ -44,8 +44,8 @@ public class ItemService {
         Item savedItem = itemRepository.save(item);
 
         log.info("Item criado com sucesso: {} / {}",
-                savedItem.getPartNumberID(),
-                savedItem.getSupplierID());
+                savedItem.getSupplierID(),
+                savedItem.getPartNumberVersion());
 
         // Converte Dominio -> DTO
         return ItemMapper.toResponse(
@@ -54,18 +54,15 @@ public class ItemService {
         );
     }
 
-    public ItemResponse getItem(String partNumberID, String supplierID) {
-        log.info("Buscando item: {} / {}", partNumberID, supplierID);
+    public ItemResponse getItem(String supplierID, String partNumberVersion) {
+        log.info("Buscando item: {} / {}", supplierID, partNumberVersion);
 
         Item item = itemRepository
-                .findById(partNumberID, supplierID)
+                .findById(supplierID, partNumberVersion)
                 .orElseThrow(() ->
                         new ItemNotFoundException(
-                                String.format(
-                                        "Item %s/%s nao encontrado",
-                                        partNumberID,
-                                        supplierID
-                                )
+                                supplierID,
+                                partNumberVersion
                         )
                 );
 
@@ -91,18 +88,18 @@ public class ItemService {
     // ===============================
 
     private void validateItemDoesNotExist(
-            String partNumberID,
-            String supplierID
+            String supplierID,
+            String partNumberVersion
     ) {
         Optional<Item> existingItem =
-                itemRepository.findById(partNumberID, supplierID);
+                itemRepository.findById(supplierID, partNumberVersion);
 
         if (existingItem.isPresent()) {
             throw new IllegalStateException(
                     String.format(
                             "Item %s/%s ja existe",
-                            partNumberID,
-                            supplierID
+                            supplierID,
+                            partNumberVersion
                     )
             );
         }
@@ -113,3 +110,13 @@ public class ItemService {
         return date.format(INPUT_DATE_FORMAT);
     }
 }
+
+
+
+
+
+
+
+
+
+

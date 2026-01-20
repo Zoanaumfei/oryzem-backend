@@ -13,9 +13,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class ItemRequest {
-    @NotBlank(message = "PartNumberID is required")
-    @Size(max = 50, message = "PartNumberID must be at most 50 characters")
-    private String partNumberID;
+    @NotBlank(message = "PartNumberVersion is required")
+    @Size(max = 50, message = "PartNumberVersion must be at most 50 characters")
+    private String partNumberVersion;
 
     @NotBlank(message = "SupplierID is required")
     @Size(max = 50, message = "SupplierID must be at most 50 characters")
@@ -57,3 +57,5 @@ public class ItemRequest {
     )
     private String sopDate;
 }
+
+
