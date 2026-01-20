@@ -3,12 +3,11 @@ package com.oryzem.backend.domain.aws.item;
 public class ItemMapper {
 
     private ItemMapper() {
-        // impede instanciação
+        // impede instanciacao
     }
 
     public static Item toDomain(ItemRequest request) {
         return Item.builder()
-                .partNumberVersion(request.getPartNumberVersion())
                 .supplierID(request.getSupplierID())
                 .processNumber(request.getProcessNumber())
                 .partDescription(request.getPartDescription())
@@ -48,5 +47,4 @@ public class ItemMapper {
                 .build();
     }
 }
-
 

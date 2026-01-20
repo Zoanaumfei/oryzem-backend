@@ -14,14 +14,14 @@ class ItemMapperTest {
     void shouldConvertRequestToDomain() {
         // given
         ItemRequest request = new ItemRequest();
-        request.setPartNumberVersion("PN123");
+        request.setPartNumber("PN123");
         request.setSupplierID("SUP456");
 
         // when
         Item item = ItemMapper.toDomain(request);
 
         // then
-        assertThat(item.getPartNumberVersion()).isEqualTo("PN123");
+        assertThat(item.getPartNumberVersion()).isNull();
         assertThat(item.getSupplierID()).isEqualTo("SUP456");
     }
 
@@ -43,5 +43,6 @@ class ItemMapperTest {
         assertThat(response.getMessage()).isEqualTo("Item criado com sucesso");
     }
 }
+
 
 

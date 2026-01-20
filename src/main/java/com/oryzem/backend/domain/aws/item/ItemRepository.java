@@ -1,18 +1,18 @@
 //Camada de Acesso a Dados (DAL)
 
-// Função: Interface entre sua aplicação e o banco de dados
+// Funcao: Interface entre sua aplicacao e o banco de dados
 // Responsabilidades:
-// 1. Traduzir operações Java para comandos DynamoDB
+// 1. Traduzir operacoes Java para comandos DynamoDB
 // 2. Esconder a complexidade do DynamoDB SDK
-// 3. Fornecer métodos CRUD simples para o Service usar
+// 3. Fornecer metodos CRUD simples para o Service usar
 
-// Métodos típicos:
-// - save()      → Salva/Atualiza um item
-// - findById()  → Busca por chave composta
-// - exists()    → Verifica existência
-// - delete()    → Remove um item
+// Metodos tipicos:
+// - save()      -> Salva/Atualiza um item
+// - findById()  -> Busca por chave composta
+// - exists()    -> Verifica existencia
+// - delete()    -> Remove um item
 
-//Analogia: É o garçom do restaurante - leva seus pedidos (queries) até a cozinha (banco de dados)
+//Analogia: E o garcom do restaurante - leva seus pedidos (queries) ate a cozinha (banco de dados)
 
 package com.oryzem.backend.domain.aws.item;
 
@@ -24,16 +24,21 @@ import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import software.amazon.awssdk.enhanced.dynamodb.Expression;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
+import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Slf4j
 @Repository
 @RequiredArgsConstructor
 public class ItemRepository {
+
+    private static final Pattern VERSION_PATTERN = Pattern.compile("#ver(\\d{5})$");
 
     private final DynamoDbEnhancedClient enhancedClient;
 
@@ -77,6 +82,37 @@ public class ItemRepository {
         getItemTable().deleteItem(key);
     }
 
+    public int findNextVersionNumber(String supplierID, String partNumber) {
+        String prefix = partNumber + "#ver";
+        QueryConditional conditional = QueryConditional.sortBeginsWith(
+                Key.builder()
+                        .partitionValue(supplierID)
+                        .sortValue(prefix)
+                        .build()
+        );
+
+        int maxVersion = -1;
+        for (Item item : getItemTable().query(r -> r.queryConditional(conditional)).items()) {
+            int version = extractVersion(item.getPartNumberVersion());
+            if (version > maxVersion) {
+                maxVersion = version;
+            }
+        }
+
+        return maxVersion + 1;
+    }
+
+    private int extractVersion(String partNumberVersion) {
+        if (partNumberVersion == null) {
+            return -1;
+        }
+        Matcher matcher = VERSION_PATTERN.matcher(partNumberVersion);
+        if (!matcher.find()) {
+            return -1;
+        }
+        return Integer.parseInt(matcher.group(1));
+    }
+
     public List<Item> findAllByStatus(ItemStatus status) {
         log.info("Listando itens com status: {}", status);
         Expression filter = Expression.builder()
@@ -101,7 +137,5 @@ public class ItemRepository {
         return items;
     }
 }
-
-
 
 

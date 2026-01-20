@@ -23,16 +23,22 @@ public class ItemService {
 
     public ItemResponse createItem(ItemRequest request) {
         log.info("Criando item: {} / {}",
-                request.getSupplierID(), request.getPartNumberVersion());
+                request.getSupplierID(), request.getPartNumber());
+
+        String partNumberVersion = buildNextPartNumberVersion(
+                request.getSupplierID(),
+                request.getPartNumber()
+        );
 
         // Regra de negocio: item nao pode existir
         validateItemDoesNotExist(
                 request.getSupplierID(),
-                request.getPartNumberVersion()
+                partNumberVersion
         );
 
         // Converte DTO -> Dominio
         Item item = ItemMapper.toDomain(request);
+        item.setPartNumberVersion(partNumberVersion);
         item.setTbtVffDate(normalizeDate(request.getTbtVffDate()));
         item.setTbtPvsDate(normalizeDate(request.getTbtPvsDate()));
         item.setTbt0sDate(normalizeDate(request.getTbt0sDate()));
@@ -83,9 +89,14 @@ public class ItemService {
                 .toList();
     }
 
-    // ===============================
+        // ===============================
     // Metodos privados (regras)
     // ===============================
+
+    private String buildNextPartNumberVersion(String supplierID, String partNumber) {
+        int nextVersion = itemRepository.findNextVersionNumber(supplierID, partNumber);
+        return partNumber + String.format("#ver%05d", nextVersion);
+    }
 
     private void validateItemDoesNotExist(
             String supplierID,
@@ -110,13 +121,4 @@ public class ItemService {
         return date.format(INPUT_DATE_FORMAT);
     }
 }
-
-
-
-
-
-
-
-
-
 

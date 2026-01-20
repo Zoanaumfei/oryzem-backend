@@ -47,7 +47,7 @@ class ItemControllerTest {
     void shouldCreateItemSuccessfully() throws Exception {
 
         ItemRequest request = new ItemRequest();
-        request.setPartNumberVersion("PN123");
+        request.setPartNumber("PN123");
         request.setSupplierID("SUP456");
         request.setProcessNumber("PROC-001");
         request.setPartDescription("Part description");
@@ -57,7 +57,7 @@ class ItemControllerTest {
         request.setSopDate("2026/03/01");
 
         ItemResponse response = ItemResponse.builder()
-                .partNumberVersion("PN123")
+                .partNumberVersion("PN123#ver00000")
                 .supplierID("SUP456")
                 .createdAt("2025-12-16T20:30:00Z")
                 .message("Item criado com sucesso")
@@ -70,7 +70,7 @@ class ItemControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.partNumberVersion").value("PN123"))
+                .andExpect(jsonPath("$.partNumberVersion").value("PN123#ver00000"))
                 .andExpect(jsonPath("$.supplierID").value("SUP456"))
                 .andExpect(jsonPath("$.message").value("Item criado com sucesso"));
     }
@@ -78,9 +78,9 @@ class ItemControllerTest {
     @Test
     void shouldReturn400WhenRequestIsInvalid() throws Exception {
 
-        // partNumberVersion vazio → viola @NotBlank
+        // partNumber vazio → viola @NotBlank
         ItemRequest request = new ItemRequest();
-        request.setPartNumberVersion("");
+        request.setPartNumber("");
         request.setSupplierID("SUP456");
         request.setProcessNumber("PROC-001");
         request.setPartDescription("Part description");
@@ -100,7 +100,7 @@ class ItemControllerTest {
     void shouldReturn409WhenItemAlreadyExists() throws Exception {
 
         ItemRequest request = new ItemRequest();
-        request.setPartNumberVersion("PN123");
+        request.setPartNumber("PN123");
         request.setSupplierID("SUP456");
         request.setProcessNumber("PROC-001");
         request.setPartDescription("Part description");
@@ -127,20 +127,20 @@ class ItemControllerTest {
     void shouldGetItemSuccessfully() throws Exception {
 
         ItemResponse response = ItemResponse.builder()
-                .partNumberVersion("PN123")
+                .partNumberVersion("PN123#ver00000")
                 .supplierID("SUP456")
                 .createdAt("2025-12-16T20:30:00Z")
                 .message("Item encontrado")
                 .build();
 
-        when(itemService.getItem("SUP456", "PN123"))
+        when(itemService.getItem("SUP456", "PN123#ver00000"))
                 .thenReturn(response);
 
         mockMvc.perform(get("/api/v1/items/{supplierID}/{partNumberVersion}",
-                        "SUP456", "PN123")
+                        "SUP456", "PN123#ver00000")
                         .with(jwt()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.partNumberVersion").value("PN123"))
+                .andExpect(jsonPath("$.partNumberVersion").value("PN123#ver00000"))
                 .andExpect(jsonPath("$.supplierID").value("SUP456"))
                 .andExpect(jsonPath("$.message").value("Item encontrado"));
     }
@@ -148,15 +148,18 @@ class ItemControllerTest {
     @Test
     void shouldReturn404WhenItemNotFound() throws Exception {
 
-        when(itemService.getItem(eq("SUP999"), eq("PN999")))
-                .thenThrow(new ItemNotFoundException("SUP999", "PN999"));
+        when(itemService.getItem(eq("SUP999"), eq("PN999#ver00000")))
+                .thenThrow(new ItemNotFoundException("SUP999", "PN999#ver00000"));
 
         mockMvc.perform(get("/api/v1/items/{supplierID}/{partNumberVersion}",
-                        "SUP999", "PN999")
+                        "SUP999", "PN999#ver00000")
                         .with(jwt()))
                 .andExpect(status().isNotFound());
     }
 }
+
+
+
 
 
 
