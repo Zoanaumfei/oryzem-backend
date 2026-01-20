@@ -21,11 +21,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
-import software.amazon.awssdk.enhanced.dynamodb.Expression;
+import software.amazon.awssdk.enhanced.dynamodb.DynamoDbIndex;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -115,14 +114,16 @@ public class ItemRepository {
 
     public List<Item> findAllByStatus(ItemStatus status) {
         log.info("Listando itens com status: {}", status);
-        Expression filter = Expression.builder()
-                .expression("#status = :status")
-                .putExpressionName("#status", "Status")
-                .putExpressionValue(":status", AttributeValue.builder().s(status.name()).build())
-                .build();
+        DynamoDbIndex<Item> index = getItemTable().index("FindByStatus");
+
+        QueryConditional conditional = QueryConditional.keyEqualTo(
+                Key.builder()
+                        .partitionValue(status.name())
+                        .build()
+        );
 
         List<Item> items = new ArrayList<>();
-        getItemTable().scan(r -> r.filterExpression(filter))
+        index.query(r -> r.queryConditional(conditional))
                 .items()
                 .forEach(items::add);
         return items;
@@ -137,5 +138,3 @@ public class ItemRepository {
         return items;
     }
 }
-
-
