@@ -123,9 +123,9 @@ public class ItemRepository {
         );
 
         List<Item> items = new ArrayList<>();
-        index.query(r -> r.queryConditional(conditional))
-                .items()
-                .forEach(items::add);
+        for (var page : index.query(r -> r.queryConditional(conditional))) {
+            items.addAll(page.items());
+        }
         return items;
     }
 
@@ -138,3 +138,5 @@ public class ItemRepository {
         return items;
     }
 }
+
+
