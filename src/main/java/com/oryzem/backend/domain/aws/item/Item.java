@@ -1,22 +1,11 @@
-// Entidade
-// Funcao: Representa a estrutura de dados da sua tabela DynamoDB
-
-// E o ESPELHO da sua tabela DynamoDB:
-// Tabela: VW216-TCROSSPA2
-// - SupplierID (Partition Key)
-// - PartNumber#Version (Sort Key)
-// - CreatedAt (Atributo adicional)
-
-// Responsabilidades:
-// 1. Mapear colunas da tabela para atributos Java
-// 2. Definir anotacoes do DynamoDB (chaves, tipos)
-// 3. Ser a "fonte da verdade" da estrutura de dados
 package com.oryzem.backend.domain.aws.item;
 
 import lombok.*;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortKey;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSecondaryPartitionKey;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSecondarySortKey;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbAttribute;
 
 import java.time.Instant;
@@ -43,6 +32,7 @@ public class Item {
     private ItemStatus status;
 
     @DynamoDbSortKey
+    @DynamoDbSecondarySortKey(indexNames = "FindByStatus")
     @DynamoDbAttribute("PartNumber#Version")
     public String getPartNumberVersion() {
         return partNumberVersion;
@@ -52,6 +42,12 @@ public class Item {
     @DynamoDbAttribute("SupplierID")
     public String getSupplierID() {
         return supplierID;
+    }
+
+    @DynamoDbSecondaryPartitionKey(indexNames = "FindByStatus")
+    @DynamoDbAttribute("Status")
+    public ItemStatus getStatus() {
+        return status;
     }
 
     @DynamoDbAttribute("CreatedAt")
@@ -92,11 +88,6 @@ public class Item {
     @DynamoDbAttribute("UpdatedAt")
     public Instant getUpdatedAt() {
         return updatedAt;
-    }
-
-    @DynamoDbAttribute("Status")
-    public ItemStatus getStatus() {
-        return status;
     }
 
     // Setters
