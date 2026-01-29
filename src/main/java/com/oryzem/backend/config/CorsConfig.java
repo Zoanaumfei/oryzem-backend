@@ -30,6 +30,16 @@ public class CorsConfig {
                         "https://e454bvtm5g.us-east-1.awsapprunner.com"
                 ));
 
+                String extraOrigins = environment.getProperty("CORS_ALLOWED_ORIGINS", "");
+                if (!extraOrigins.isBlank()) {
+                    for (String origin : extraOrigins.split(",")) {
+                        String trimmed = origin.trim();
+                        if (!trimmed.isEmpty()) {
+                            allowedOrigins.add(trimmed);
+                        }
+                    }
+                }
+
                 if (Arrays.asList(environment.getActiveProfiles()).contains("dev")) {
                     allowedOrigins.add("http://localhost:5173");
                     allowedOrigins.add("https://localhost:5173");
