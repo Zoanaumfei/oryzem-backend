@@ -17,6 +17,7 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortK
 public class MonthlyBirthday {
 
     private Integer month;
+    private Integer day;
     private String name;
     private Integer year;
     private Integer corporateMonth;
@@ -32,6 +33,11 @@ public class MonthlyBirthday {
     @DynamoDbAttribute("name")
     public String getName() {
         return name;
+    }
+
+    @DynamoDbAttribute("day")
+    public Integer getDay() {
+        return day;
     }
 
     @DynamoDbAttribute("year")
@@ -55,6 +61,10 @@ public class MonthlyBirthday {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public void setDay(Integer day) {
+        this.day = day;
     }
 
     public void setYear(Integer year) {

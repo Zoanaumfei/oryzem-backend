@@ -9,6 +9,7 @@ public class MonthlyBirthdayMapper {
     public static MonthlyBirthday toDomain(MonthlyBirthdayRequest request) {
         return MonthlyBirthday.builder()
                 .month(request.getMonth())
+                .day(request.getDay())
                 .name(request.getName())
                 .year(request.getYear())
                 .corporateMonth(request.getCorporateMonth())
@@ -19,6 +20,7 @@ public class MonthlyBirthdayMapper {
     public static MonthlyBirthdayResponse toResponse(MonthlyBirthday birthday, String message) {
         return MonthlyBirthdayResponse.builder()
                 .month(birthday.getMonth())
+                .day(birthday.getDay())
                 .name(birthday.getName())
                 .year(birthday.getYear())
                 .corporateMonth(birthday.getCorporateMonth())

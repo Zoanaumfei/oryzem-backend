@@ -23,6 +23,12 @@ public class MonthlyBirthdayRequest {
     @Max(value = 12, message = "Month must be between 1 and 12")
     private Integer month;
 
+    @JsonProperty("day")
+    @NotNull(message = "Day is required")
+    @Min(value = 1, message = "Day must be between 1 and 31")
+    @Max(value = 31, message = "Day must be between 1 and 31")
+    private Integer day;
+
     @JsonProperty("name")
     @NotBlank(message = "Name is required")
     @Size(max = 200, message = "Name must be at most 200 characters")

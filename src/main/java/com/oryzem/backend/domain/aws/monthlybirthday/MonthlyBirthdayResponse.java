@@ -13,6 +13,8 @@ import lombok.NoArgsConstructor;
 public class MonthlyBirthdayResponse {
     @JsonProperty("month")
     private Integer month;
+    @JsonProperty("day")
+    private Integer day;
     @JsonProperty("name")
     private String name;
     @JsonProperty("year")
