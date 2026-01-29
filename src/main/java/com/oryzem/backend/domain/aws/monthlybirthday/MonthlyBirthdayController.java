@@ -30,6 +30,17 @@ public class MonthlyBirthdayController {
                 .body(response);
     }
 
+    @PutMapping
+    public ResponseEntity<MonthlyBirthdayResponse> updateBirthday(
+            @Valid @RequestBody MonthlyBirthdayRequest request) {
+
+        MonthlyBirthdayResponse response = service.updateBirthday(request);
+        log.info("PUT /api/v1/birthdays - Success: {}/{}",
+                response.getMonth(),
+                response.getName());
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping
     public ResponseEntity<List<MonthlyBirthdayResponse>> getBirthdays(
             @RequestParam(value = "month", required = false) Integer month,

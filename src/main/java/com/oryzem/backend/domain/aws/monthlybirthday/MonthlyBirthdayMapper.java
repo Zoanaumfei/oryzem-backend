@@ -14,6 +14,7 @@ public class MonthlyBirthdayMapper {
                 .year(request.getYear())
                 .corporateMonth(request.getCorporateMonth())
                 .corporateYear(request.getCorporateYear())
+                .photoKey(request.getPhotoKey())
                 .build();
     }
 
@@ -25,6 +26,7 @@ public class MonthlyBirthdayMapper {
                 .year(birthday.getYear())
                 .corporateMonth(birthday.getCorporateMonth())
                 .corporateYear(birthday.getCorporateYear())
+                .photoKey(birthday.getPhotoKey())
                 .message(message)
                 .build();
     }

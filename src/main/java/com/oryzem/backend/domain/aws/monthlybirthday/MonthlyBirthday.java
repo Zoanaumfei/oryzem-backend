@@ -22,6 +22,7 @@ public class MonthlyBirthday {
     private Integer year;
     private Integer corporateMonth;
     private Integer corporateYear;
+    private String photoKey;
 
     @DynamoDbPartitionKey
     @DynamoDbAttribute("month")
@@ -55,6 +56,11 @@ public class MonthlyBirthday {
         return corporateYear;
     }
 
+    @DynamoDbAttribute("photo_key")
+    public String getPhotoKey() {
+        return photoKey;
+    }
+
     public void setMonth(Integer month) {
         this.month = month;
     }
@@ -77,5 +83,9 @@ public class MonthlyBirthday {
 
     public void setCorporateYear(Integer corporateYear) {
         this.corporateYear = corporateYear;
+    }
+
+    public void setPhotoKey(String photoKey) {
+        this.photoKey = photoKey;
     }
 }

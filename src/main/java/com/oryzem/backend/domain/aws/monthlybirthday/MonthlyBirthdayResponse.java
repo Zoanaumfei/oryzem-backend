@@ -23,5 +23,7 @@ public class MonthlyBirthdayResponse {
     private Integer corporateMonth;
     @JsonProperty("corporate_year")
     private Integer corporateYear;
+    @JsonProperty("photo_key")
+    private String photoKey;
     private String message;
 }

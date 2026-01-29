@@ -51,4 +51,7 @@ public class MonthlyBirthdayRequest {
     @Min(value = 1000, message = "CorporateYear must be YYYY")
     @Max(value = 9999, message = "CorporateYear must be YYYY")
     private Integer corporateYear;
+
+    @JsonProperty("photo_key")
+    private String photoKey;
 }

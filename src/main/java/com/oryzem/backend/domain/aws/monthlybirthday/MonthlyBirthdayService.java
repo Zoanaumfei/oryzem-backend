@@ -25,6 +25,22 @@ public class MonthlyBirthdayService {
         return MonthlyBirthdayMapper.toResponse(saved, "Birthday saved successfully");
     }
 
+    public MonthlyBirthdayResponse updateBirthday(MonthlyBirthdayRequest request) {
+        MonthlyBirthday existing = repository
+                .findById(request.getMonth(), request.getName())
+                .orElseThrow(() -> new MonthlyBirthdayNotFoundException(
+                        request.getMonth(), request.getName()
+                ));
+
+        MonthlyBirthday updated = MonthlyBirthdayMapper.toDomain(request);
+        if (request.getPhotoKey() == null) {
+            updated.setPhotoKey(existing.getPhotoKey());
+        }
+
+        MonthlyBirthday saved = repository.save(updated);
+        return MonthlyBirthdayMapper.toResponse(saved, "Birthday updated successfully");
+    }
+
     public MonthlyBirthdayResponse getBirthday(Integer month, String name) {
         MonthlyBirthday birthday = repository
                 .findById(month, name)
