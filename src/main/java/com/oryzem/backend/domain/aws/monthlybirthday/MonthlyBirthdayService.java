@@ -38,6 +38,22 @@ public class MonthlyBirthdayService {
                 .toList();
     }
 
+    public List<MonthlyBirthdayResponse> getBirthdaysByNameContains(String name) {
+        String normalizedName = normalizeName(name);
+        List<MonthlyBirthday> birthdays = repository.findAllByNameContains(normalizedName);
+        return birthdays.stream()
+                .map(birthday -> MonthlyBirthdayMapper.toResponse(birthday, "Birthday listed"))
+                .toList();
+    }
+
+    public List<MonthlyBirthdayResponse> getBirthdaysByMonthAndNameContains(Integer month, String name) {
+        String normalizedName = normalizeName(name);
+        List<MonthlyBirthday> birthdays = repository.findAllByMonthAndNameContains(month, normalizedName);
+        return birthdays.stream()
+                .map(birthday -> MonthlyBirthdayMapper.toResponse(birthday, "Birthday listed"))
+                .toList();
+    }
+
     public List<MonthlyBirthdayResponse> getAllBirthdays() {
         List<MonthlyBirthday> birthdays = repository.findAll();
         return birthdays.stream()
@@ -59,5 +75,16 @@ public class MonthlyBirthdayService {
                     String.format("Birthday %s/%s already exists", month, name)
             );
         }
+    }
+
+    private String normalizeName(String name) {
+        if (name == null) {
+            throw new IllegalArgumentException("Name is required");
+        }
+        String trimmed = name.trim();
+        if (trimmed.isEmpty()) {
+            throw new IllegalArgumentException("Name is required");
+        }
+        return trimmed;
     }
 }

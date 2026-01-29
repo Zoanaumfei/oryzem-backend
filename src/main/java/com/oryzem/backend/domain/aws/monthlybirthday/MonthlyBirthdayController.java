@@ -32,11 +32,18 @@ public class MonthlyBirthdayController {
 
     @GetMapping
     public ResponseEntity<List<MonthlyBirthdayResponse>> getBirthdays(
-            @RequestParam(value = "month", required = false) Integer month) {
-        if (month == null) {
-            return ResponseEntity.ok(service.getAllBirthdays());
+            @RequestParam(value = "month", required = false) Integer month,
+            @RequestParam(value = "name", required = false) String name) {
+        if (month != null && name != null && !name.isBlank()) {
+            return ResponseEntity.ok(service.getBirthdaysByMonthAndNameContains(month, name));
         }
-        return ResponseEntity.ok(service.getBirthdaysByMonth(month));
+        if (month != null) {
+            return ResponseEntity.ok(service.getBirthdaysByMonth(month));
+        }
+        if (name != null && !name.isBlank()) {
+            return ResponseEntity.ok(service.getBirthdaysByNameContains(name));
+        }
+        return ResponseEntity.ok(service.getAllBirthdays());
     }
 
     @GetMapping("/{month}/{name}")
