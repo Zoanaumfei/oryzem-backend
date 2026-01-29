@@ -23,28 +23,28 @@ public class MonthlyBirthday {
     private Integer corporateYear;
 
     @DynamoDbPartitionKey
-    @DynamoDbAttribute("Month")
+    @DynamoDbAttribute("month")
     public Integer getMonth() {
         return month;
     }
 
     @DynamoDbSortKey
-    @DynamoDbAttribute("Name")
+    @DynamoDbAttribute("name")
     public String getName() {
         return name;
     }
 
-    @DynamoDbAttribute("Year")
+    @DynamoDbAttribute("year")
     public Integer getYear() {
         return year;
     }
 
-    @DynamoDbAttribute("CorporateMonth")
+    @DynamoDbAttribute("corporate_month")
     public Integer getCorporateMonth() {
         return corporateMonth;
     }
 
-    @DynamoDbAttribute("CorporateYear")
+    @DynamoDbAttribute("corporate_year")
     public Integer getCorporateYear() {
         return corporateYear;
     }
