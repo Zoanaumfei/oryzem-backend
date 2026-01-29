@@ -27,7 +27,7 @@ public class MonthlyBirthdayRepository {
     }
 
     public MonthlyBirthday save(MonthlyBirthday birthday) {
-        log.info("Saving birthday: {}", birthday.getPersonId());
+        log.info("Saving birthday: {}/{}", birthday.getMonth(), birthday.getName());
         getTable().putItem(birthday);
         return birthday;
     }
