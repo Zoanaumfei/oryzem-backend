@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import com.oryzem.backend.domain.aws.monthlybirthday.exception.MonthlyBirthdayNotFoundException;
 
 @Slf4j
@@ -35,7 +36,7 @@ public class MonthlyBirthdayService {
         List<MonthlyBirthday> birthdays = repository.findAllByMonth(month);
         return birthdays.stream()
                 .map(birthday -> MonthlyBirthdayMapper.toResponse(birthday, "Birthday listed"))
-                .toList();
+                .collect(Collectors.toList());
     }
 
     public List<MonthlyBirthdayResponse> getBirthdaysByNameContains(String name) {
@@ -43,7 +44,7 @@ public class MonthlyBirthdayService {
         List<MonthlyBirthday> birthdays = repository.findAllByNameContains(normalizedName);
         return birthdays.stream()
                 .map(birthday -> MonthlyBirthdayMapper.toResponse(birthday, "Birthday listed"))
-                .toList();
+                .collect(Collectors.toList());
     }
 
     public List<MonthlyBirthdayResponse> getBirthdaysByMonthAndNameContains(Integer month, String name) {
@@ -51,14 +52,14 @@ public class MonthlyBirthdayService {
         List<MonthlyBirthday> birthdays = repository.findAllByMonthAndNameContains(month, normalizedName);
         return birthdays.stream()
                 .map(birthday -> MonthlyBirthdayMapper.toResponse(birthday, "Birthday listed"))
-                .toList();
+                .collect(Collectors.toList());
     }
 
     public List<MonthlyBirthdayResponse> getAllBirthdays() {
         List<MonthlyBirthday> birthdays = repository.findAll();
         return birthdays.stream()
                 .map(birthday -> MonthlyBirthdayMapper.toResponse(birthday, "Birthday listed"))
-                .toList();
+                .collect(Collectors.toList());
     }
 
     public void deleteBirthday(Integer month, String name) {

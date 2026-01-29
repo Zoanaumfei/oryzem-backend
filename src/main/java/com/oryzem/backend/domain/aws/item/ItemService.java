@@ -9,6 +9,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import com.oryzem.backend.domain.aws.item.exception.ItemNotFoundException;
 
 @Slf4j
@@ -79,14 +80,14 @@ public class ItemService {
         List<Item> items = itemRepository.findAllByStatus(status);
         return items.stream()
                 .map(item -> ItemMapper.toResponse(item, "Item listado"))
-                .toList();
+                .collect(Collectors.toList());
     }
 
     public List<ItemResponse> getAllItems() {
         List<Item> items = itemRepository.findAll();
         return items.stream()
                 .map(item -> ItemMapper.toResponse(item, "Item listado"))
-                .toList();
+                .collect(Collectors.toList());
     }
 
         // ===============================

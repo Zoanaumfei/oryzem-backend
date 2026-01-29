@@ -14,6 +14,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/health")
@@ -114,7 +115,7 @@ public class HealthCheckController {
                     // Chaves primárias
                     details.put("primaryKey", table.keySchema().stream()
                             .map(ks -> ks.attributeName() + " (" + ks.keyType() + ")")
-                            .toList()
+                            .collect(Collectors.toList())
                     );
 
                     tableDetails.put(tableName, details);
@@ -161,7 +162,7 @@ public class HealthCheckController {
                             "attribute", ks.attributeName(),
                             "type", ks.keyType().toString()
                     ))
-                    .toList()
+                    .collect(Collectors.toList())
             );
 
             // Atributos
@@ -170,7 +171,7 @@ public class HealthCheckController {
                             "name", ad.attributeName(),
                             "type", ad.attributeType().toString()
                     ))
-                    .toList()
+                    .collect(Collectors.toList())
             );
 
             // Índices secundários
@@ -181,9 +182,9 @@ public class HealthCheckController {
                                 "status", gsi.indexStatus().toString(),
                                 "keySchema", gsi.keySchema().stream()
                                         .map(ks -> ks.attributeName() + " (" + ks.keyType() + ")")
-                                        .toList()
+                                        .collect(Collectors.toList())
                         ))
-                        .toList()
+                        .collect(Collectors.toList())
                 );
             }
 
