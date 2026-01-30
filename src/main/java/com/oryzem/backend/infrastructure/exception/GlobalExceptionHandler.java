@@ -2,6 +2,7 @@ package com.oryzem.backend.infrastructure.exception;
 
 import com.oryzem.backend.domain.aws.item.exception.ItemNotFoundException;
 import com.oryzem.backend.domain.aws.monthlybirthday.exception.MonthlyBirthdayNotFoundException;
+import com.oryzem.backend.domain.inventory.exception.InventoryItemNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -37,6 +38,19 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MonthlyBirthdayNotFoundException.class)
     public ResponseEntity<ApiErrorResponse> handleBirthdayNotFound(
             MonthlyBirthdayNotFoundException ex,
+            HttpServletRequest request) {
+
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(buildError(ex.getMessage(), request));
+    }
+
+    /**
+     * 404 - Inventory item not found
+     */
+    @ExceptionHandler(InventoryItemNotFoundException.class)
+    public ResponseEntity<ApiErrorResponse> handleInventoryItemNotFound(
+            InventoryItemNotFoundException ex,
             HttpServletRequest request) {
 
         return ResponseEntity
