@@ -9,3 +9,9 @@ aws:
 
   s3:
     endpoint: http://localhost:4566  # LocalStack
+
+app:
+  cors:
+    dev-allowed-origins:
+      - http://localhost:5173
+      - https://localhost:5173
