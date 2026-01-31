@@ -13,6 +13,8 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.time.format.ResolverStyle;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -23,7 +25,8 @@ import java.util.stream.Collectors;
 public class ItemService {
 
     private static final DateTimeFormatter INPUT_DATE_FORMAT =
-            DateTimeFormatter.ofPattern("yyyy/MM/dd");
+            DateTimeFormatter.ofPattern("uuuu/MM/dd")
+                    .withResolverStyle(ResolverStyle.STRICT);
 
     private final ItemRepository itemRepository;
 
@@ -45,10 +48,10 @@ public class ItemService {
         // Converte DTO -> Dominio
         Item item = ItemMapper.toDomain(request);
         item.setPartNumberVersion(partNumberVersion);
-        item.setTbtVffDate(normalizeDate(request.getTbtVffDate()));
-        item.setTbtPvsDate(normalizeDate(request.getTbtPvsDate()));
-        item.setTbt0sDate(normalizeDate(request.getTbt0sDate()));
-        item.setSopDate(normalizeDate(request.getSopDate()));
+        item.setTbtVffDate(normalizeDate(request.getTbtVffDate(), "TbtVffDate"));
+        item.setTbtPvsDate(normalizeDate(request.getTbtPvsDate(), "TbtPvsDate"));
+        item.setTbt0sDate(normalizeDate(request.getTbt0sDate(), "Tbt0sDate"));
+        item.setSopDate(normalizeDate(request.getSopDate(), "SopDate"));
         item.setStatus(ItemStatus.SAVED);
         item.setUpdatedAt(Instant.now());
 
@@ -122,11 +125,20 @@ public class ItemService {
         }
     }
 
-    private String normalizeDate(String value) {
-        LocalDate date = LocalDate.parse(value, INPUT_DATE_FORMAT);
-        return date.format(INPUT_DATE_FORMAT);
+    private String normalizeDate(String value, String fieldName) {
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException(fieldName + " is required");
+        }
+        try {
+            LocalDate date = LocalDate.parse(value, INPUT_DATE_FORMAT);
+            return date.format(INPUT_DATE_FORMAT);
+        } catch (DateTimeParseException ex) {
+            throw new IllegalArgumentException(
+                    fieldName + " must be a valid date in YYYY/MM/DD",
+                    ex
+            );
+        }
     }
 }
-
 
 
