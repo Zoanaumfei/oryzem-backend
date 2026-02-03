@@ -17,8 +17,6 @@ public class MonthlyBirthdayResponse {
     private Integer day;
     @JsonProperty("name")
     private String name;
-    @JsonProperty("year")
-    private Integer year;
     @JsonProperty("corporate_month")
     private Integer corporateMonth;
     @JsonProperty("corporate_year")
