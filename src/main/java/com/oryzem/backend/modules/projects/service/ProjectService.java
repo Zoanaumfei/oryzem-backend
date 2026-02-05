@@ -1,4 +1,4 @@
-﻿package com.oryzem.backend.modules.projects.service;
+package com.oryzem.backend.modules.projects.service;
 
 import com.oryzem.backend.modules.projects.domain.DateIndexItem;
 import com.oryzem.backend.modules.projects.domain.Gate;

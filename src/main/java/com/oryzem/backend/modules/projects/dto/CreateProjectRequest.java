@@ -1,4 +1,4 @@
-﻿package com.oryzem.backend.modules.projects.dto;
+package com.oryzem.backend.modules.projects.dto;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;

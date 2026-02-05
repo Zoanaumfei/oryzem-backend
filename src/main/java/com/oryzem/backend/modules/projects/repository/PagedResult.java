@@ -1,4 +1,4 @@
-﻿package com.oryzem.backend.modules.projects.repository;
+package com.oryzem.backend.modules.projects.repository;
 
 import java.util.List;
 

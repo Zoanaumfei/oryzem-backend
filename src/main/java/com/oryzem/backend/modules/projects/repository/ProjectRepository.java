@@ -1,4 +1,4 @@
-﻿package com.oryzem.backend.modules.projects.repository;
+package com.oryzem.backend.modules.projects.repository;
 
 import com.oryzem.backend.modules.projects.domain.DateIndexItem;
 import com.oryzem.backend.modules.projects.domain.MetaItem;
@@ -9,14 +9,16 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
-import software.amazon.awssdk.enhanced.dynamodb.BatchWriteResult;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import software.amazon.awssdk.enhanced.dynamodb.Expression;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
+import software.amazon.awssdk.enhanced.dynamodb.TableMetadata;
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
 import software.amazon.awssdk.enhanced.dynamodb.model.BatchWriteItemEnhancedRequest;
+import software.amazon.awssdk.enhanced.dynamodb.model.BatchWriteResult;
 import software.amazon.awssdk.enhanced.dynamodb.model.GetItemEnhancedRequest;
+import software.amazon.awssdk.enhanced.dynamodb.model.IgnoreNullsMode;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryEnhancedRequest;
 import software.amazon.awssdk.enhanced.dynamodb.model.UpdateItemEnhancedRequest;
@@ -104,7 +106,7 @@ public class ProjectRepository {
         UpdateItemEnhancedRequest.Builder<MetaItem> builder = UpdateItemEnhancedRequest
                 .builder(MetaItem.class)
                 .item(item)
-                .ignoreNulls(true);
+                .ignoreNullsMode(IgnoreNullsMode.SCALAR_ONLY);
 
         if (expectedStatus != null) {
             Expression condition = Expression.builder()
@@ -213,7 +215,7 @@ public class ProjectRepository {
         int attempt = 0;
 
         while (!remaining.isEmpty()) {
-            WriteBatch.Builder<T> writeBatch = WriteBatch.builder(table.tableSchema().itemClass())
+            WriteBatch.Builder<T> writeBatch = WriteBatch.builder(table.tableSchema().itemType().rawClass())
                     .mappedTableResource(table);
             for (T item : remaining) {
                 writeBatch.addPutItem(item);
@@ -237,14 +239,14 @@ public class ProjectRepository {
     }
 
     private <T> void executeDeleteBatch(DynamoDbTable<T> table, List<T> batch) {
-        List<T> remaining = new ArrayList<>(batch);
+        List<Key> remaining = buildKeys(table, batch);
         int attempt = 0;
 
         while (!remaining.isEmpty()) {
-            WriteBatch.Builder<T> writeBatch = WriteBatch.builder(table.tableSchema().itemClass())
+            WriteBatch.Builder<T> writeBatch = WriteBatch.builder(table.tableSchema().itemType().rawClass())
                     .mappedTableResource(table);
-            for (T item : remaining) {
-                writeBatch.addDeleteItem(item);
+            for (Key key : remaining) {
+                writeBatch.addDeleteItem(key);
             }
 
             BatchWriteItemEnhancedRequest request = BatchWriteItemEnhancedRequest.builder()
@@ -252,7 +254,7 @@ public class ProjectRepository {
                     .build();
 
             BatchWriteResult result = enhancedClient.batchWriteItem(request);
-            List<T> unprocessed = result.unprocessedDeleteItemsForTable(table);
+            List<Key> unprocessed = result.unprocessedDeleteItemsForTable(table);
             remaining = unprocessed == null ? Collections.emptyList() : unprocessed;
 
             if (!remaining.isEmpty()) {
@@ -262,6 +264,55 @@ public class ProjectRepository {
                 }
             }
         }
+    }
+
+    private <T> List<Key> buildKeys(DynamoDbTable<T> table, List<T> items) {
+        if (items == null || items.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        TableSchema<T> schema = table.tableSchema();
+        TableMetadata metadata = schema.tableMetadata();
+        List<String> partitionKeys = metadata.indexPartitionKeys(TableMetadata.primaryIndexName());
+        List<String> sortKeys = metadata.indexSortKeys(TableMetadata.primaryIndexName());
+
+        List<Key> keys = new ArrayList<>(items.size());
+        for (T item : items) {
+            if (item == null) {
+                continue;
+            }
+
+            Map<String, AttributeValue> attrMap = schema.itemToMap(item, metadata.primaryKeys());
+            List<AttributeValue> partitionValues = new ArrayList<>();
+            for (String keyName : partitionKeys) {
+                AttributeValue value = attrMap.get(keyName);
+                if (value != null) {
+                    partitionValues.add(value);
+                }
+            }
+
+            if (partitionValues.isEmpty()) {
+                continue;
+            }
+
+            Key.Builder builder = Key.builder().partitionValues(partitionValues);
+            if (!sortKeys.isEmpty()) {
+                List<AttributeValue> sortValues = new ArrayList<>();
+                for (String keyName : sortKeys) {
+                    AttributeValue value = attrMap.get(keyName);
+                    if (value != null) {
+                        sortValues.add(value);
+                    }
+                }
+                if (!sortValues.isEmpty()) {
+                    builder.sortValues(sortValues);
+                }
+            }
+
+            keys.add(builder.build());
+        }
+
+        return keys;
     }
 
     private void backoff(int attempt) {

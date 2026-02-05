@@ -1,4 +1,4 @@
-﻿package com.oryzem.backend.modules.projects.controller;
+package com.oryzem.backend.modules.projects.controller;
 
 import com.oryzem.backend.modules.projects.dto.CreateProjectRequest;
 import com.oryzem.backend.modules.projects.dto.ProjectResponse;

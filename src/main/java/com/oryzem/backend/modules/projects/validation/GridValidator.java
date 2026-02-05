@@ -1,4 +1,4 @@
-﻿package com.oryzem.backend.modules.projects.validation;
+package com.oryzem.backend.modules.projects.validation;
 
 import com.oryzem.backend.modules.projects.domain.Gate;
 import com.oryzem.backend.modules.projects.domain.Phase;

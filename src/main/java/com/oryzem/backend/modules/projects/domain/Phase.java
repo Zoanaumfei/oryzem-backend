@@ -1,4 +1,4 @@
-﻿package com.oryzem.backend.modules.projects.domain;
+package com.oryzem.backend.modules.projects.domain;
 
 public enum Phase {
     VFF,

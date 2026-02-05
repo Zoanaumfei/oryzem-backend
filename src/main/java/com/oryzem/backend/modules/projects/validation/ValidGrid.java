@@ -1,4 +1,4 @@
-﻿package com.oryzem.backend.modules.projects.validation;
+package com.oryzem.backend.modules.projects.validation;
 
 import jakarta.validation.Constraint;
 import jakarta.validation.Payload;

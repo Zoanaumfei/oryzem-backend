@@ -1,4 +1,4 @@
-﻿package com.oryzem.backend.modules.projects.dto;
+package com.oryzem.backend.modules.projects.dto;
 
 import com.oryzem.backend.modules.projects.domain.Gate;
 import com.oryzem.backend.modules.projects.domain.Phase;
