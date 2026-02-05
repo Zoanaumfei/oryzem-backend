@@ -217,10 +217,28 @@ public class ProjectService {
         List<MilestoneItem> milestones = new ArrayList<>();
         List<DateIndexItem> dateItems = new ArrayList<>();
 
-        for (int als = 1; als <= 8; als++) {
-            for (Gate gate : GATE_ORDER) {
-                for (Phase phase : PHASE_ORDER) {
-                    String value = normalizeDate(grid.dates().get(als).get(gate).get(phase));
+        if (grid == null || grid.dates() == null || grid.dates().isEmpty()) {
+            return new WriteSets(milestones, dateItems);
+        }
+
+        for (Map.Entry<Integer, Map<Gate, Map<Phase, String>>> alsEntry : grid.dates().entrySet()) {
+            Integer als = alsEntry.getKey();
+            Map<Gate, Map<Phase, String>> gateMap = alsEntry.getValue();
+            if (als == null || gateMap == null) {
+                continue;
+            }
+            for (Map.Entry<Gate, Map<Phase, String>> gateEntry : gateMap.entrySet()) {
+                Gate gate = gateEntry.getKey();
+                Map<Phase, String> phaseMap = gateEntry.getValue();
+                if (gate == null || phaseMap == null) {
+                    continue;
+                }
+                for (Map.Entry<Phase, String> phaseEntry : phaseMap.entrySet()) {
+                    Phase phase = phaseEntry.getKey();
+                    if (phase == null) {
+                        continue;
+                    }
+                    String value = normalizeDate(phaseEntry.getValue());
                     if (value.isEmpty()) {
                         continue;
                     }
@@ -245,11 +263,27 @@ public class ProjectService {
         }
 
         Map<CellKey, String> incoming = new HashMap<>();
-        for (int als = 1; als <= 8; als++) {
-            for (Gate gate : GATE_ORDER) {
-                for (Phase phase : PHASE_ORDER) {
-                    String value = normalizeDate(grid.dates().get(als).get(gate).get(phase));
-                    incoming.put(new CellKey(als, gate, phase), value);
+        if (grid != null && grid.dates() != null) {
+            for (Map.Entry<Integer, Map<Gate, Map<Phase, String>>> alsEntry : grid.dates().entrySet()) {
+                Integer als = alsEntry.getKey();
+                Map<Gate, Map<Phase, String>> gateMap = alsEntry.getValue();
+                if (als == null || gateMap == null) {
+                    continue;
+                }
+                for (Map.Entry<Gate, Map<Phase, String>> gateEntry : gateMap.entrySet()) {
+                    Gate gate = gateEntry.getKey();
+                    Map<Phase, String> phaseMap = gateEntry.getValue();
+                    if (gate == null || phaseMap == null) {
+                        continue;
+                    }
+                    for (Map.Entry<Phase, String> phaseEntry : phaseMap.entrySet()) {
+                        Phase phase = phaseEntry.getKey();
+                        if (phase == null) {
+                            continue;
+                        }
+                        String value = normalizeDate(phaseEntry.getValue());
+                        incoming.put(new CellKey(als, gate, phase), value);
+                    }
                 }
             }
         }
