@@ -43,7 +43,7 @@ public class ProjectRepository {
 
     private final DynamoDbEnhancedClient enhancedClient;
 
-    @Value("${aws.dynamodb.projects-table:OryzemProjects}")
+    @Value("${aws.dynamodb.projects-table:Projects_BSKL}")
     private String tableName;
 
     private DynamoDbTable<MetaItem> metaTable() {
