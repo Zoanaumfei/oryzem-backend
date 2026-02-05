@@ -7,7 +7,6 @@ import com.oryzem.backend.modules.projects.domain.ProjectKeys;
 import com.oryzem.backend.modules.projects.domain.ProjectStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
@@ -43,23 +42,22 @@ public class ProjectRepository {
 
     private final DynamoDbEnhancedClient enhancedClient;
 
-    @Value("${aws.dynamodb.projects-table:Projects}")
-    private String tableName;
+    private static final String TABLE_NAME = "Projects";
 
     public String getTableName() {
-        return tableName;
+        return TABLE_NAME;
     }
 
     private DynamoDbTable<MetaItem> metaTable() {
-        return enhancedClient.table(tableName, TableSchema.fromBean(MetaItem.class));
+        return enhancedClient.table(TABLE_NAME, TableSchema.fromBean(MetaItem.class));
     }
 
     private DynamoDbTable<MilestoneItem> milestoneTable() {
-        return enhancedClient.table(tableName, TableSchema.fromBean(MilestoneItem.class));
+        return enhancedClient.table(TABLE_NAME, TableSchema.fromBean(MilestoneItem.class));
     }
 
     private DynamoDbTable<DateIndexItem> dateTable() {
-        return enhancedClient.table(tableName, TableSchema.fromBean(DateIndexItem.class));
+        return enhancedClient.table(TABLE_NAME, TableSchema.fromBean(DateIndexItem.class));
     }
 
     public Optional<MetaItem> getMeta(String projectId, boolean consistentRead) {
