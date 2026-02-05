@@ -43,8 +43,12 @@ public class ProjectRepository {
 
     private final DynamoDbEnhancedClient enhancedClient;
 
-    @Value("${aws.dynamodb.projects-table:Projects_BSKL}")
+    @Value("${aws.dynamodb.projects-table:Projects}")
     private String tableName;
+
+    public String getTableName() {
+        return tableName;
+    }
 
     private DynamoDbTable<MetaItem> metaTable() {
         return enhancedClient.table(tableName, TableSchema.fromBean(MetaItem.class));
