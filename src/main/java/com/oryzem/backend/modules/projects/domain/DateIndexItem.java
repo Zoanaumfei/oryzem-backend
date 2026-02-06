@@ -23,6 +23,7 @@ public class DateIndexItem {
     private String projectId;
     private String projectName;
     private Integer als;
+    private String alsDescription;
     private Gate gate;
     private Phase phase;
     private String date;
@@ -54,6 +55,11 @@ public class DateIndexItem {
     @DynamoDbAttribute("als")
     public Integer getAls() {
         return als;
+    }
+
+    @DynamoDbAttribute("alsDescription")
+    public String getAlsDescription() {
+        return alsDescription;
     }
 
     @DynamoDbAttribute("gate")

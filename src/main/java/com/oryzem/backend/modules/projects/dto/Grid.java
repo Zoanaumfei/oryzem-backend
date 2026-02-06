@@ -10,6 +10,8 @@ import java.util.Map;
 @ValidGrid
 public record Grid(
         @NotNull
+        Map<Integer, String> alsDescriptions,
+        @NotNull
         Map<Integer, Map<Gate, Map<Phase, String>>> dates
 ) {
 }

@@ -12,6 +12,7 @@ public record DueDateItem(
         @NotBlank String projectId,
         @NotBlank String projectName,
         @Min(1) @Max(8) int als,
+        @NotBlank String alsDescription,
         @NotNull Gate gate,
         @NotNull Phase phase,
         @Pattern(regexp = "\\d{4}-\\d{2}-\\d{2}") String dueDate

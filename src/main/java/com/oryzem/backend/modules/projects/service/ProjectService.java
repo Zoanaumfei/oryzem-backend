@@ -182,6 +182,7 @@ public class ProjectService {
                     item.getProjectId(),
                     item.getProjectName(),
                     item.getAls(),
+                    normalizeDescription(item.getAlsDescription()),
                     item.getGate(),
                     item.getPhase(),
                     item.getDate()
@@ -221,12 +222,16 @@ public class ProjectService {
             return new WriteSets(milestones, dateItems);
         }
 
+        Map<Integer, String> alsDescriptions =
+                grid.alsDescriptions() == null ? Map.of() : grid.alsDescriptions();
+
         for (Map.Entry<Integer, Map<Gate, Map<Phase, String>>> alsEntry : grid.dates().entrySet()) {
             Integer als = alsEntry.getKey();
             Map<Gate, Map<Phase, String>> gateMap = alsEntry.getValue();
             if (als == null || gateMap == null) {
                 continue;
             }
+            String alsDescription = descriptionForAls(alsDescriptions, als);
             for (Map.Entry<Gate, Map<Phase, String>> gateEntry : gateMap.entrySet()) {
                 Gate gate = gateEntry.getKey();
                 Map<Phase, String> phaseMap = gateEntry.getValue();
@@ -242,8 +247,8 @@ public class ProjectService {
                     if (value.isEmpty()) {
                         continue;
                     }
-                    milestones.add(buildMilestone(projectId, projectName, als, gate, phase, value, updatedAt));
-                    dateItems.add(buildDateIndex(projectId, projectName, als, gate, phase, value, updatedAt));
+                    milestones.add(buildMilestone(projectId, projectName, als, alsDescription, gate, phase, value, updatedAt));
+                    dateItems.add(buildDateIndex(projectId, projectName, als, alsDescription, gate, phase, value, updatedAt));
                 }
             }
         }
@@ -257,12 +262,17 @@ public class ProjectService {
                                 Grid grid,
                                 Instant updatedAt) {
         Map<CellKey, String> existing = new HashMap<>();
+        Map<CellKey, String> existingDescriptions = new HashMap<>();
         for (MilestoneItem item : existingItems) {
             existing.put(new CellKey(item.getAls(), item.getGate(), item.getPhase()),
                     normalizeDate(item.getDate()));
+            existingDescriptions.put(new CellKey(item.getAls(), item.getGate(), item.getPhase()),
+                    normalizeDescription(item.getAlsDescription()));
         }
 
         Map<CellKey, String> incoming = new HashMap<>();
+        Map<Integer, String> alsDescriptions =
+                grid != null && grid.alsDescriptions() != null ? grid.alsDescriptions() : Map.of();
         if (grid != null && grid.dates() != null) {
             for (Map.Entry<Integer, Map<Gate, Map<Phase, String>>> alsEntry : grid.dates().entrySet()) {
                 Integer als = alsEntry.getKey();
@@ -297,13 +307,15 @@ public class ProjectService {
             CellKey key = entry.getKey();
             String newDate = entry.getValue();
             String oldDate = existing.getOrDefault(key, "");
+            String newDescription = descriptionForAls(alsDescriptions, key.als);
+            String oldDescription = existingDescriptions.getOrDefault(key, "");
 
             if (oldDate.isEmpty() && newDate.isEmpty()) {
                 continue;
             }
             if (oldDate.isEmpty()) {
-                milestonePuts.add(buildMilestone(projectId, projectName, key.als, key.gate, key.phase, newDate, updatedAt));
-                datePuts.add(buildDateIndex(projectId, projectName, key.als, key.gate, key.phase, newDate, updatedAt));
+                milestonePuts.add(buildMilestone(projectId, projectName, key.als, newDescription, key.gate, key.phase, newDate, updatedAt));
+                datePuts.add(buildDateIndex(projectId, projectName, key.als, newDescription, key.gate, key.phase, newDate, updatedAt));
                 continue;
             }
             if (newDate.isEmpty()) {
@@ -312,9 +324,14 @@ public class ProjectService {
                 continue;
             }
             if (!oldDate.equals(newDate)) {
-                milestonePuts.add(buildMilestone(projectId, projectName, key.als, key.gate, key.phase, newDate, updatedAt));
+                milestonePuts.add(buildMilestone(projectId, projectName, key.als, newDescription, key.gate, key.phase, newDate, updatedAt));
                 dateDeletes.add(buildDateIndexKeyOnly(projectId, key, oldDate));
-                datePuts.add(buildDateIndex(projectId, projectName, key.als, key.gate, key.phase, newDate, updatedAt));
+                datePuts.add(buildDateIndex(projectId, projectName, key.als, newDescription, key.gate, key.phase, newDate, updatedAt));
+                continue;
+            }
+            if (!oldDescription.equals(newDescription)) {
+                milestonePuts.add(buildMilestone(projectId, projectName, key.als, newDescription, key.gate, key.phase, newDate, updatedAt));
+                datePuts.add(buildDateIndex(projectId, projectName, key.als, newDescription, key.gate, key.phase, newDate, updatedAt));
             }
         }
 
@@ -323,6 +340,7 @@ public class ProjectService {
 
     private Grid buildGrid(List<MilestoneItem> items) {
         Map<Integer, Map<Gate, Map<Phase, String>>> grid = new LinkedHashMap<>();
+        Map<Integer, String> alsDescriptions = new LinkedHashMap<>();
         for (int als = 1; als <= 8; als++) {
             Map<Gate, Map<Phase, String>> gateMap = new EnumMap<>(Gate.class);
             for (Gate gate : GATE_ORDER) {
@@ -333,6 +351,7 @@ public class ProjectService {
                 gateMap.put(gate, phaseMap);
             }
             grid.put(als, gateMap);
+            alsDescriptions.put(als, "");
         }
 
         for (MilestoneItem item : items) {
@@ -343,14 +362,22 @@ public class ProjectService {
             grid.get(item.getAls())
                     .get(item.getGate())
                     .put(item.getPhase(), value);
+            if (item.getAls() != null) {
+                String existing = alsDescriptions.get(item.getAls());
+                String incoming = normalizeDescription(item.getAlsDescription());
+                if (existing != null && existing.isBlank() && !incoming.isBlank()) {
+                    alsDescriptions.put(item.getAls(), incoming);
+                }
+            }
         }
 
-        return new Grid(grid);
+        return new Grid(alsDescriptions, grid);
     }
 
     private MilestoneItem buildMilestone(String projectId,
                                          String projectName,
                                          int als,
+                                         String alsDescription,
                                          Gate gate,
                                          Phase phase,
                                          String date,
@@ -361,6 +388,7 @@ public class ProjectService {
                 .projectId(projectId)
                 .projectName(projectName)
                 .als(als)
+                .alsDescription(alsDescription)
                 .gate(gate)
                 .phase(phase)
                 .date(date)
@@ -379,6 +407,7 @@ public class ProjectService {
     private DateIndexItem buildDateIndex(String projectId,
                                          String projectName,
                                          int als,
+                                         String alsDescription,
                                          Gate gate,
                                          Phase phase,
                                          String date,
@@ -389,6 +418,7 @@ public class ProjectService {
                 .projectId(projectId)
                 .projectName(projectName)
                 .als(als)
+                .alsDescription(alsDescription)
                 .gate(gate)
                 .phase(phase)
                 .date(date)
@@ -406,6 +436,17 @@ public class ProjectService {
 
     private String normalizeDate(String value) {
         return (value == null || value.isBlank()) ? "" : value;
+    }
+
+    private String normalizeDescription(String value) {
+        return (value == null || value.isBlank()) ? "" : value;
+    }
+
+    private String descriptionForAls(Map<Integer, String> alsDescriptions, int als) {
+        if (alsDescriptions == null) {
+            return "";
+        }
+        return normalizeDescription(alsDescriptions.get(als));
     }
 
     private void validateDate(String date) {

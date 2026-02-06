@@ -29,8 +29,19 @@ public class GridValidator implements ConstraintValidator<ValidGrid, Grid> {
 
     @Override
     public boolean isValid(Grid grid, ConstraintValidatorContext context) {
-        if (grid == null || grid.dates() == null) {
+        if (grid == null || grid.dates() == null || grid.alsDescriptions() == null) {
             return true;
+        }
+
+        Map<Integer, String> alsDescriptions = grid.alsDescriptions();
+        if (!REQUIRED_ALS.equals(alsDescriptions.keySet())) {
+            return false;
+        }
+        for (Integer als : REQUIRED_ALS) {
+            String description = alsDescriptions.get(als);
+            if (description == null || description.isBlank()) {
+                return false;
+            }
         }
 
         Map<Integer, Map<Gate, Map<Phase, String>>> dates = grid.dates();
