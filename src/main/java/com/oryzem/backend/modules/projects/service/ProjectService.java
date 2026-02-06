@@ -13,6 +13,7 @@ import com.oryzem.backend.modules.projects.dto.DueDateItem;
 import com.oryzem.backend.modules.projects.dto.DueDateResponse;
 import com.oryzem.backend.modules.projects.dto.Grid;
 import com.oryzem.backend.modules.projects.dto.ProjectResponse;
+import com.oryzem.backend.modules.projects.dto.ProjectSummaryResponse;
 import com.oryzem.backend.modules.projects.dto.UpdateProjectRequest;
 import com.oryzem.backend.modules.projects.repository.PagedResult;
 import com.oryzem.backend.modules.projects.repository.ProjectRepository;
@@ -169,6 +170,17 @@ public class ProjectService {
 
         String updatedAt = meta.getUpdatedAt() != null ? meta.getUpdatedAt().toString() : Instant.now().toString();
         return new ProjectResponse(projectId, meta.getProjectName(), grid, updatedAt);
+    }
+
+    public List<ProjectSummaryResponse> listProjects() {
+        List<MetaItem> items = projectRepository.listProjectMetaItems();
+        return items.stream()
+                .map(item -> new ProjectSummaryResponse(
+                        item.getProjectId(),
+                        item.getProjectName(),
+                        item.getStatus()
+                ))
+                .toList();
     }
 
     public DueDateResponse getDueDate(String date, String pageToken, int limit) {

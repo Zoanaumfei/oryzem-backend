@@ -2,6 +2,7 @@ package com.oryzem.backend.modules.projects.controller;
 
 import com.oryzem.backend.modules.projects.dto.CreateProjectRequest;
 import com.oryzem.backend.modules.projects.dto.ProjectResponse;
+import com.oryzem.backend.modules.projects.dto.ProjectSummaryResponse;
 import com.oryzem.backend.modules.projects.dto.UpdateProjectRequest;
 import com.oryzem.backend.modules.projects.service.ProjectService;
 import jakarta.validation.Valid;
@@ -17,6 +18,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 @Slf4j
 @RestController
@@ -44,6 +47,12 @@ public class ProjectController {
 
         ProjectResponse response = projectService.updateProject(projectId, request, requestId);
         log.info("PUT /api/v1/projects/{} - Sucesso", projectId);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping
+    public ResponseEntity<List<ProjectSummaryResponse>> listProjects() {
+        List<ProjectSummaryResponse> response = projectService.listProjects();
         return ResponseEntity.ok(response);
     }
 

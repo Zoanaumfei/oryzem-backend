@@ -75,6 +75,22 @@ public class ProjectRepository {
         return Optional.ofNullable(item);
     }
 
+    public List<MetaItem> listProjectMetaItems() {
+        Expression filter = Expression.builder()
+                .expression("#sk = :sk")
+                .expressionNames(Map.of("#sk", "SK"))
+                .expressionValues(Map.of(
+                        ":sk", AttributeValue.builder().s(ProjectKeys.metaSk()).build()
+                ))
+                .build();
+
+        List<MetaItem> items = new ArrayList<>();
+        for (var page : metaTable().scan(r -> r.filterExpression(filter))) {
+            items.addAll(page.items());
+        }
+        return items;
+    }
+
     public void createMetaConditionally(MetaItem meta) {
         Expression condition = Expression.builder()
                 .expression("attribute_not_exists(#pk) AND attribute_not_exists(#sk)")
