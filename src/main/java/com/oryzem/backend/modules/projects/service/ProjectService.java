@@ -303,6 +303,19 @@ public class ProjectService {
         List<DateIndexItem> datePuts = new ArrayList<>();
         List<DateIndexItem> dateDeletes = new ArrayList<>();
 
+        for (Map.Entry<CellKey, String> entry : existing.entrySet()) {
+            CellKey key = entry.getKey();
+            if (incoming.containsKey(key)) {
+                continue;
+            }
+            String oldDate = entry.getValue();
+            if (oldDate.isEmpty()) {
+                continue;
+            }
+            milestoneDeletes.add(buildMilestoneKeyOnly(projectId, key));
+            dateDeletes.add(buildDateIndexKeyOnly(projectId, key, oldDate));
+        }
+
         for (Map.Entry<CellKey, String> entry : incoming.entrySet()) {
             CellKey key = entry.getKey();
             String newDate = entry.getValue();
@@ -341,23 +354,13 @@ public class ProjectService {
     private Grid buildGrid(List<MilestoneItem> items) {
         Map<Integer, Map<Gate, Map<Phase, String>>> grid = new LinkedHashMap<>();
         Map<Integer, String> alsDescriptions = new LinkedHashMap<>();
-        for (int als = 1; als <= 8; als++) {
-            Map<Gate, Map<Phase, String>> gateMap = new EnumMap<>(Gate.class);
-            for (Gate gate : GATE_ORDER) {
-                Map<Phase, String> phaseMap = new EnumMap<>(Phase.class);
-                for (Phase phase : PHASE_ORDER) {
-                    phaseMap.put(phase, "");
-                }
-                gateMap.put(gate, phaseMap);
-            }
-            grid.put(als, gateMap);
-            alsDescriptions.put(als, "");
-        }
 
         for (MilestoneItem item : items) {
             if (item.getAls() == null || item.getGate() == null || item.getPhase() == null) {
                 continue;
             }
+            grid.computeIfAbsent(item.getAls(), als -> createEmptyGateMap());
+            alsDescriptions.putIfAbsent(item.getAls(), "");
             String value = normalizeDate(item.getDate());
             grid.get(item.getAls())
                     .get(item.getGate())
@@ -447,6 +450,18 @@ public class ProjectService {
             return "";
         }
         return normalizeDescription(alsDescriptions.get(als));
+    }
+
+    private Map<Gate, Map<Phase, String>> createEmptyGateMap() {
+        Map<Gate, Map<Phase, String>> gateMap = new EnumMap<>(Gate.class);
+        for (Gate gate : GATE_ORDER) {
+            Map<Phase, String> phaseMap = new EnumMap<>(Phase.class);
+            for (Phase phase : PHASE_ORDER) {
+                phaseMap.put(phase, "");
+            }
+            gateMap.put(gate, phaseMap);
+        }
+        return gateMap;
     }
 
     private void validateDate(String date) {

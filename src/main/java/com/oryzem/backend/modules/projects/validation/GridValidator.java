@@ -34,10 +34,16 @@ public class GridValidator implements ConstraintValidator<ValidGrid, Grid> {
         }
 
         Map<Integer, String> alsDescriptions = grid.alsDescriptions();
-        if (!REQUIRED_ALS.equals(alsDescriptions.keySet())) {
+        if (alsDescriptions.isEmpty()) {
+            return false;
+        }
+        if (!REQUIRED_ALS.containsAll(alsDescriptions.keySet())) {
             return false;
         }
         for (Integer als : REQUIRED_ALS) {
+            if (!alsDescriptions.containsKey(als)) {
+                continue;
+            }
             String description = alsDescriptions.get(als);
             if (description == null || description.isBlank()) {
                 return false;
@@ -46,6 +52,9 @@ public class GridValidator implements ConstraintValidator<ValidGrid, Grid> {
 
         Map<Integer, Map<Gate, Map<Phase, String>>> dates = grid.dates();
         if (!REQUIRED_ALS.containsAll(dates.keySet())) {
+            return false;
+        }
+        if (!alsDescriptions.keySet().equals(dates.keySet())) {
             return false;
         }
 
