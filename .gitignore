@@ -47,3 +47,6 @@ gcp-credentials.json
 # Logs
 logs/
 *.log
+*.log.*
+*.log.*.gz
+app.log.*
