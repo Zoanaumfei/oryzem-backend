@@ -1,5 +1,6 @@
 package com.oryzem.backend.modules.projects.controller;
 
+import com.oryzem.backend.modules.projects.dto.DueDateRangeResponse;
 import com.oryzem.backend.modules.projects.dto.DueDateResponse;
 import com.oryzem.backend.modules.projects.service.ProjectService;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +28,18 @@ public class DueDateController {
 
         DueDateResponse response = projectService.getDueDate(date, pageToken, limit);
         log.info("GET /api/v1/due/{} - items: {}", date, response.items().size());
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/range")
+    public ResponseEntity<DueDateRangeResponse> getDueDateRange(
+            @RequestParam String startDate,
+            @RequestParam(defaultValue = "21") int days,
+            @RequestParam(defaultValue = "100") int limit) {
+
+        DueDateRangeResponse response = projectService.getDueDateRange(startDate, days, limit);
+        log.info("GET /api/v1/due/range - start: {}, days: {}, totalDates: {}",
+                startDate, response.days(), response.dates().size());
         return ResponseEntity.ok(response);
     }
 }

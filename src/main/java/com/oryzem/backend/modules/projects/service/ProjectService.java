@@ -10,6 +10,7 @@ import com.oryzem.backend.modules.projects.domain.ProjectKeys;
 import com.oryzem.backend.modules.projects.domain.ProjectStatus;
 import com.oryzem.backend.modules.projects.dto.CreateProjectRequest;
 import com.oryzem.backend.modules.projects.dto.DueDateItem;
+import com.oryzem.backend.modules.projects.dto.DueDateRangeResponse;
 import com.oryzem.backend.modules.projects.dto.DueDateResponse;
 import com.oryzem.backend.modules.projects.dto.Grid;
 import com.oryzem.backend.modules.projects.dto.ProjectResponse;
@@ -185,23 +186,23 @@ public class ProjectService {
 
     public DueDateResponse getDueDate(String date, String pageToken, int limit) {
         validateDate(date);
-        int pageSize = limit > 0 ? limit : 100;
-        PagedResult<DateIndexItem> result = projectRepository.queryDateItems(date, pageToken, pageSize);
+        return buildDueDateResponse(date, pageToken, limit);
+    }
 
-        List<DueDateItem> items = new ArrayList<>();
-        for (DateIndexItem item : result.items()) {
-            items.add(new DueDateItem(
-                    item.getProjectId(),
-                    item.getProjectName(),
-                    item.getAls(),
-                    normalizeDescription(item.getAlsDescription()),
-                    item.getGate(),
-                    item.getPhase(),
-                    item.getDate()
-            ));
+    public DueDateRangeResponse getDueDateRange(String startDate, int days, int limit) {
+        validateDate(startDate);
+        int window = normalizeDays(days);
+        int pageSize = limit > 0 ? limit : 100;
+
+        LocalDate start = LocalDate.parse(startDate, DATE_FORMAT);
+        List<DueDateResponse> responses = new ArrayList<>(window);
+        for (int i = 0; i < window; i++) {
+            String date = start.plusDays(i).format(DATE_FORMAT);
+            PagedResult<DateIndexItem> result = projectRepository.queryDateItems(date, null, pageSize);
+            responses.add(buildDueDateResponse(date, result));
         }
 
-        return new DueDateResponse(date, items, result.nextPageToken());
+        return new DueDateRangeResponse(startDate, window, responses);
     }
 
     private ProjectResponse resumeCreate(CreateProjectRequest request, String requestId) {
@@ -485,6 +486,39 @@ public class ProjectService {
         } catch (DateTimeParseException ex) {
             throw new IllegalArgumentException("Date must be a valid YYYY-MM-DD");
         }
+    }
+
+    private DueDateResponse buildDueDateResponse(String date, String pageToken, int limit) {
+        int pageSize = limit > 0 ? limit : 100;
+        PagedResult<DateIndexItem> result = projectRepository.queryDateItems(date, pageToken, pageSize);
+        return buildDueDateResponse(date, result);
+    }
+
+    private DueDateResponse buildDueDateResponse(String date, PagedResult<DateIndexItem> result) {
+        List<DueDateItem> items = new ArrayList<>();
+        for (DateIndexItem item : result.items()) {
+            items.add(new DueDateItem(
+                    item.getProjectId(),
+                    item.getProjectName(),
+                    item.getAls(),
+                    normalizeDescription(item.getAlsDescription()),
+                    item.getGate(),
+                    item.getPhase(),
+                    item.getDate()
+            ));
+        }
+
+        return new DueDateResponse(date, items, result.nextPageToken());
+    }
+
+    private int normalizeDays(int days) {
+        if (days <= 0) {
+            return 21;
+        }
+        if (days > 60) {
+            throw new IllegalArgumentException("Days must be between 1 and 60");
+        }
+        return days;
     }
 
     private void requireRequestId(String requestId) {
