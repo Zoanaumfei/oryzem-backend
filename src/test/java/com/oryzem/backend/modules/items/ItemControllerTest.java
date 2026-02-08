@@ -14,7 +14,9 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -38,6 +40,10 @@ class ItemControllerTest {
     // ✅ Mock do Service (obrigatório em @WebMvcTest)
     @MockitoBean
     private ItemService itemService;
+
+    private RequestPostProcessor externalUserJwt() {
+        return jwt().authorities(new SimpleGrantedAuthority("External-User"));
+    }
 
     /* =========================================================
        POST /api/v1/items
@@ -66,7 +72,7 @@ class ItemControllerTest {
         when(itemService.createItem(any())).thenReturn(response);
 
         mockMvc.perform(post("/api/v1/items")
-                        .with(jwt())
+                        .with(externalUserJwt())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
@@ -90,10 +96,29 @@ class ItemControllerTest {
         request.setSopDate("2026/03/01");
 
         mockMvc.perform(post("/api/v1/items")
-                        .with(jwt())
+                        .with(externalUserJwt())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void shouldReturn403WhenUserHasNoAllowedRole() throws Exception {
+        ItemRequest request = new ItemRequest();
+        request.setPartNumber("PN123");
+        request.setSupplierID("SUP456");
+        request.setProcessNumber("PROC-001");
+        request.setPartDescription("Part description");
+        request.setTbtVffDate("2026/01/16");
+        request.setTbtPvsDate("2026/01/20");
+        request.setTbt0sDate("2026/02/01");
+        request.setSopDate("2026/03/01");
+
+        mockMvc.perform(post("/api/v1/items")
+                        .with(jwt())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isForbidden());
     }
 
     @Test
@@ -113,7 +138,7 @@ class ItemControllerTest {
                 .thenThrow(new IllegalStateException("Item já existe"));
 
         mockMvc.perform(post("/api/v1/items")
-                        .with(jwt())
+                        .with(externalUserJwt())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isConflict());
@@ -138,7 +163,7 @@ class ItemControllerTest {
 
         mockMvc.perform(get("/api/v1/items/{supplierID}/{partNumberVersion}",
                         "SUP456", "PN123#ver00000")
-                        .with(jwt()))
+                        .with(externalUserJwt()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.partNumberVersion").value("PN123#ver00000"))
                 .andExpect(jsonPath("$.supplierID").value("SUP456"))
@@ -153,7 +178,7 @@ class ItemControllerTest {
 
         mockMvc.perform(get("/api/v1/items/{supplierID}/{partNumberVersion}",
                         "SUP999", "PN999#ver00000")
-                        .with(jwt()))
+                        .with(externalUserJwt()))
                 .andExpect(status().isNotFound());
     }
 }

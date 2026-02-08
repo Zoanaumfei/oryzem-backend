@@ -6,10 +6,13 @@ import com.oryzem.backend.modules.projects.dto.ProjectSummaryResponse;
 import com.oryzem.backend.modules.projects.dto.UpdateProjectRequest;
 import com.oryzem.backend.modules.projects.service.ProjectService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -25,13 +28,19 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/projects")
 @RequiredArgsConstructor
+@Validated
 public class ProjectController {
 
     private final ProjectService projectService;
 
     @PostMapping
     public ResponseEntity<ProjectResponse> createProject(
-            @RequestHeader("Idempotency-Key") String requestId,
+            @RequestHeader("Idempotency-Key")
+            @NotBlank(message = "Idempotency-Key is required")
+            @Pattern(
+                    regexp = "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$",
+                    message = "Idempotency-Key must be a valid UUID"
+            ) String requestId,
             @Valid @RequestBody CreateProjectRequest request) {
 
         ProjectResponse response = projectService.createProject(request, requestId);
@@ -41,7 +50,12 @@ public class ProjectController {
 
     @PutMapping("/{projectId}")
     public ResponseEntity<ProjectResponse> updateProject(
-            @RequestHeader("Idempotency-Key") String requestId,
+            @RequestHeader("Idempotency-Key")
+            @NotBlank(message = "Idempotency-Key is required")
+            @Pattern(
+                    regexp = "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$",
+                    message = "Idempotency-Key must be a valid UUID"
+            ) String requestId,
             @PathVariable String projectId,
             @Valid @RequestBody UpdateProjectRequest request) {
 

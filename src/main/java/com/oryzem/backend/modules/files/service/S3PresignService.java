@@ -7,7 +7,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
-import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
@@ -18,6 +18,7 @@ import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequ
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 
 import jakarta.annotation.PreDestroy;
+import java.net.URI;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
@@ -33,27 +34,32 @@ public class S3PresignService {
     private final String bucket;
 
     public S3PresignService(
-            @Value("${AWS_REGION:us-east-1}") String region,
-            @Value("${UPLOAD_BUCKET:}") String bucket
+            AwsCredentialsProvider credentialsProvider,
+            Region region,
+            @Value("${aws.s3.endpoint:}") String s3Endpoint,
+            @Value("${UPLOAD_BUCKET:${app.files.upload-bucket:}}") String bucket
     ) {
-        if (bucket == null || bucket.isBlank()) {
-            throw new IllegalStateException("UPLOAD_BUCKET is required");
+        this.bucket = bucket == null ? "" : bucket.trim();
+        S3Presigner.Builder builder = S3Presigner.builder()
+                .region(region)
+                .credentialsProvider(credentialsProvider);
+
+        if (s3Endpoint != null && !s3Endpoint.isBlank()) {
+            builder.endpointOverride(URI.create(s3Endpoint));
         }
-        this.bucket = bucket;
-        this.presigner = S3Presigner.builder()
-                .region(Region.of(region))
-                .credentialsProvider(DefaultCredentialsProvider.builder().build())
-                .build();
+
+        this.presigner = builder.build();
     }
 
     public PresignUploadResponse presignUpload(PresignUploadRequest request) {
+        String configuredBucket = requireConfiguredBucket();
         validateSize(request.sizeBytes());
 
         String sanitizedFileName = sanitizeFileName(request.originalFileName());
         String key = buildKey(sanitizedFileName);
 
         PutObjectRequest putObjectRequest = PutObjectRequest.builder()
-                .bucket(bucket)
+                .bucket(configuredBucket)
                 .key(key)
                 .contentType(request.contentType())
                 .contentLength(request.sizeBytes())
@@ -74,8 +80,9 @@ public class S3PresignService {
     }
 
     public PresignDownloadResponse presignDownload(String key) {
+        String configuredBucket = requireConfiguredBucket();
         GetObjectRequest getObjectRequest = GetObjectRequest.builder()
-                .bucket(bucket)
+                .bucket(configuredBucket)
                 .key(key)
                 .build();
 
@@ -138,6 +145,16 @@ public class S3PresignService {
             return "file";
         }
         return result;
+    }
+
+    private String requireConfiguredBucket() {
+        if (bucket.isBlank()) {
+            throw new ResponseStatusException(
+                    HttpStatus.SERVICE_UNAVAILABLE,
+                    "File storage is not configured (UPLOAD_BUCKET)"
+            );
+        }
+        return bucket;
     }
 
     @PreDestroy
