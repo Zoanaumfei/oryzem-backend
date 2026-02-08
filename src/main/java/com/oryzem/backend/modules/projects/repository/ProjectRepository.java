@@ -5,8 +5,8 @@ import com.oryzem.backend.modules.projects.domain.MetaItem;
 import com.oryzem.backend.modules.projects.domain.MilestoneItem;
 import com.oryzem.backend.modules.projects.domain.ProjectKeys;
 import com.oryzem.backend.modules.projects.domain.ProjectStatus;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
@@ -33,7 +33,6 @@ import java.util.Optional;
 
 @Slf4j
 @Repository
-@RequiredArgsConstructor
 public class ProjectRepository {
 
     private static final int BATCH_SIZE = 25;
@@ -41,23 +40,30 @@ public class ProjectRepository {
     private static final long BASE_BACKOFF_MS = 100L;
 
     private final DynamoDbEnhancedClient enhancedClient;
+    private final String tableName;
 
-    private static final String TABLE_NAME = "Projects";
+    public ProjectRepository(
+            DynamoDbEnhancedClient enhancedClient,
+            @Value("${app.dynamodb.tables.projects:Projects}") String tableName
+    ) {
+        this.enhancedClient = enhancedClient;
+        this.tableName = tableName;
+    }
 
     public String getTableName() {
-        return TABLE_NAME;
+        return tableName;
     }
 
     private DynamoDbTable<MetaItem> metaTable() {
-        return enhancedClient.table(TABLE_NAME, TableSchema.fromBean(MetaItem.class));
+        return enhancedClient.table(tableName, TableSchema.fromBean(MetaItem.class));
     }
 
     private DynamoDbTable<MilestoneItem> milestoneTable() {
-        return enhancedClient.table(TABLE_NAME, TableSchema.fromBean(MilestoneItem.class));
+        return enhancedClient.table(tableName, TableSchema.fromBean(MilestoneItem.class));
     }
 
     private DynamoDbTable<DateIndexItem> dateTable() {
-        return enhancedClient.table(TABLE_NAME, TableSchema.fromBean(DateIndexItem.class));
+        return enhancedClient.table(tableName, TableSchema.fromBean(DateIndexItem.class));
     }
 
     public Optional<MetaItem> getMeta(String projectId, boolean consistentRead) {

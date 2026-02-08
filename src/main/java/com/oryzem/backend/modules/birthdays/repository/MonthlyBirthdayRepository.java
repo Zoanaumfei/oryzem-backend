@@ -1,8 +1,8 @@
 package com.oryzem.backend.modules.birthdays.repository;
 
 import com.oryzem.backend.modules.birthdays.domain.MonthlyBirthday;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
@@ -19,15 +19,21 @@ import java.util.Optional;
 
 @Slf4j
 @Repository
-@RequiredArgsConstructor
 public class MonthlyBirthdayRepository {
 
-    private static final String TABLE_NAME = "MonthlyBirthday";
-
     private final DynamoDbEnhancedClient enhancedClient;
+    private final String tableName;
+
+    public MonthlyBirthdayRepository(
+            DynamoDbEnhancedClient enhancedClient,
+            @Value("${app.dynamodb.tables.birthdays:MonthlyBirthday}") String tableName
+    ) {
+        this.enhancedClient = enhancedClient;
+        this.tableName = tableName;
+    }
 
     private DynamoDbTable<MonthlyBirthday> getTable() {
-        return enhancedClient.table(TABLE_NAME, TableSchema.fromBean(MonthlyBirthday.class));
+        return enhancedClient.table(tableName, TableSchema.fromBean(MonthlyBirthday.class));
     }
 
     public MonthlyBirthday save(MonthlyBirthday birthday) {
