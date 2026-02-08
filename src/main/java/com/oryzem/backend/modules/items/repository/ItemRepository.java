@@ -18,41 +18,69 @@ package com.oryzem.backend.modules.items.repository;
 
 import com.oryzem.backend.modules.items.domain.Item;
 import com.oryzem.backend.modules.items.domain.ItemStatus;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbIndex;
+import software.amazon.awssdk.enhanced.dynamodb.Expression;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
+import software.amazon.awssdk.enhanced.dynamodb.model.PutItemEnhancedRequest;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @Slf4j
 @Repository
-@RequiredArgsConstructor
 public class ItemRepository {
 
     private static final Pattern VERSION_PATTERN = Pattern.compile("#ver(\\d{5})$");
 
     private final DynamoDbEnhancedClient enhancedClient;
+    private final String tableName;
 
-    // Nome da sua tabela DynamoDB
-    private static final String TABLE_NAME = "VW216-TCROSSPA2";
+    public ItemRepository(
+            DynamoDbEnhancedClient enhancedClient,
+            @Value("${app.dynamodb.tables.items:VW216-TCROSSPA2}") String tableName
+    ) {
+        this.enhancedClient = enhancedClient;
+        this.tableName = tableName;
+    }
 
     private DynamoDbTable<Item> getItemTable() {
-        return enhancedClient.table(TABLE_NAME, TableSchema.fromBean(Item.class));
+        return enhancedClient.table(tableName, TableSchema.fromBean(Item.class));
     }
 
     public Item save(Item item) {
         log.info("Salvando item: {}/{}", item.getSupplierID(), item.getPartNumberVersion());
         getItemTable().putItem(item);
+        return item;
+    }
+
+    public Item saveIfAbsent(Item item) {
+        log.info("Salvando item (condicional): {}/{}", item.getSupplierID(), item.getPartNumberVersion());
+
+        Expression condition = Expression.builder()
+                .expression("attribute_not_exists(#pk) AND attribute_not_exists(#sk)")
+                .expressionNames(Map.of(
+                        "#pk", "SupplierID",
+                        "#sk", "PartNumber#Version"
+                ))
+                .build();
+
+        PutItemEnhancedRequest<Item> request = PutItemEnhancedRequest.builder(Item.class)
+                .item(item)
+                .conditionExpression(condition)
+                .build();
+
+        getItemTable().putItem(request);
         return item;
     }
 

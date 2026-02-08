@@ -9,6 +9,7 @@ import com.oryzem.backend.modules.items.repository.ItemRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedException;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -16,7 +17,6 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.format.ResolverStyle;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -27,6 +27,7 @@ public class ItemService {
     private static final DateTimeFormatter INPUT_DATE_FORMAT =
             DateTimeFormatter.ofPattern("uuuu/MM/dd")
                     .withResolverStyle(ResolverStyle.STRICT);
+    private static final int MAX_CREATE_RETRIES = 5;
 
     private final ItemRepository itemRepository;
 
@@ -34,29 +35,37 @@ public class ItemService {
         log.info("Criando item: {} / {}",
                 request.getSupplierID(), request.getPartNumber());
 
-        String partNumberVersion = buildNextPartNumberVersion(
-                request.getSupplierID(),
-                request.getPartNumber()
-        );
+        Item savedItem = null;
+        for (int attempt = 1; attempt <= MAX_CREATE_RETRIES; attempt++) {
+            String partNumberVersion = buildNextPartNumberVersion(
+                    request.getSupplierID(),
+                    request.getPartNumber()
+            );
 
-        // Regra de negocio: item nao pode existir
-        validateItemDoesNotExist(
-                request.getSupplierID(),
-                partNumberVersion
-        );
+            Item item = ItemMapper.toDomain(request);
+            item.setPartNumberVersion(partNumberVersion);
+            item.setTbtVffDate(normalizeDate(request.getTbtVffDate(), "TbtVffDate"));
+            item.setTbtPvsDate(normalizeDate(request.getTbtPvsDate(), "TbtPvsDate"));
+            item.setTbt0sDate(normalizeDate(request.getTbt0sDate(), "Tbt0sDate"));
+            item.setSopDate(normalizeDate(request.getSopDate(), "SopDate"));
+            item.setStatus(ItemStatus.SAVED);
+            item.setUpdatedAt(Instant.now());
 
-        // Converte DTO -> Dominio
-        Item item = ItemMapper.toDomain(request);
-        item.setPartNumberVersion(partNumberVersion);
-        item.setTbtVffDate(normalizeDate(request.getTbtVffDate(), "TbtVffDate"));
-        item.setTbtPvsDate(normalizeDate(request.getTbtPvsDate(), "TbtPvsDate"));
-        item.setTbt0sDate(normalizeDate(request.getTbt0sDate(), "Tbt0sDate"));
-        item.setSopDate(normalizeDate(request.getSopDate(), "SopDate"));
-        item.setStatus(ItemStatus.SAVED);
-        item.setUpdatedAt(Instant.now());
+            try {
+                savedItem = itemRepository.saveIfAbsent(item);
+                break;
+            } catch (ConditionalCheckFailedException ex) {
+                log.warn("Conflito de versao ao criar item {}/{} (tentativa {}/{})",
+                        request.getSupplierID(),
+                        request.getPartNumber(),
+                        attempt,
+                        MAX_CREATE_RETRIES);
+            }
+        }
 
-        // Persiste
-        Item savedItem = itemRepository.save(item);
+        if (savedItem == null) {
+            throw new IllegalStateException("Nao foi possivel criar uma versao unica do item. Tente novamente.");
+        }
 
         log.info("Item criado com sucesso: {} / {}",
                 savedItem.getSupplierID(),
@@ -105,24 +114,6 @@ public class ItemService {
     private String buildNextPartNumberVersion(String supplierID, String partNumber) {
         int nextVersion = itemRepository.findNextVersionNumber(supplierID, partNumber);
         return partNumber + String.format("#ver%05d", nextVersion);
-    }
-
-    private void validateItemDoesNotExist(
-            String supplierID,
-            String partNumberVersion
-    ) {
-        Optional<Item> existingItem =
-                itemRepository.findById(supplierID, partNumberVersion);
-
-        if (existingItem.isPresent()) {
-            throw new IllegalStateException(
-                    String.format(
-                            "Item %s/%s ja existe",
-                            supplierID,
-                            partNumberVersion
-                    )
-            );
-        }
     }
 
     private String normalizeDate(String value, String fieldName) {
