@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -44,9 +45,10 @@ public class InitiativeController {
 
     @PostMapping
     public ResponseEntity<InitiativeResponse> createInitiative(
+            @RequestHeader(value = "Idempotency-Key", required = false) String requestId,
             @Valid @RequestBody InitiativeRequest request
     ) {
-        InitiativeResponse response = initiativeService.createInitiative(request);
+        InitiativeResponse response = initiativeService.createInitiative(request, requestId);
         log.info("POST /api/v1/initiatives - Success: {}", response.getInitiativeId());
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }

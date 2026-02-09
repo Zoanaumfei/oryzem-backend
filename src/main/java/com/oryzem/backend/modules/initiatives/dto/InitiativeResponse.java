@@ -14,6 +14,7 @@ public class InitiativeResponse {
     private String initiativeId;
     private String initiativeName;
     private String initiativeNameLower;
+    private String initiativeCode;
     private String initiativeDescription;
     private String initiativeType;
     private String initiativeDueDate;

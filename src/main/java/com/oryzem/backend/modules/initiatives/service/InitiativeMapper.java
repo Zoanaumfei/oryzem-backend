@@ -13,6 +13,7 @@ public class InitiativeMapper {
                 .initiativeId(initiative.getInitiativeId())
                 .initiativeName(initiative.getInitiativeName())
                 .initiativeNameLower(initiative.getInitiativeNameLower())
+                .initiativeCode(initiative.getInitiativeCode())
                 .initiativeDescription(initiative.getInitiativeDescription())
                 .initiativeType(initiative.getInitiativeType())
                 .initiativeDueDate(initiative.getInitiativeDueDate())

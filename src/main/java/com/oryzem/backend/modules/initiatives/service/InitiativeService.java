@@ -6,6 +6,7 @@ import com.oryzem.backend.modules.initiatives.domain.InitiativeNotFoundException
 import com.oryzem.backend.modules.initiatives.dto.InitiativeRequest;
 import com.oryzem.backend.modules.initiatives.dto.InitiativeResponse;
 import com.oryzem.backend.modules.initiatives.repository.InitiativeRepository;
+import com.oryzem.backend.modules.initiatives.repository.InitiativeRepository.InitiativeIdempotencyRecord;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -35,23 +36,49 @@ public class InitiativeService {
 
     private final InitiativeRepository repository;
 
-    public InitiativeResponse createInitiative(InitiativeRequest request) {
+    public InitiativeResponse createInitiative(InitiativeRequest request, String requestId) {
+        String normalizedRequestId = normalizeRequestId(requestId);
         InitiativePayload payload = buildPayload(request);
+
+        InitiativeIdempotencyRecord existingRecord = normalizedRequestId == null
+                ? null
+                : repository.getCreateIdempotency(normalizedRequestId).orElse(null);
+        if (existingRecord != null) {
+            if (existingRecord.initiativeId() != null
+                    && !existingRecord.initiativeId().isBlank()
+                    && !existingRecord.initiativeId().equals(payload.initiativeId())) {
+                throw new IllegalStateException("Idempotency-Key already used for a different initiative");
+            }
+            Initiative existingInitiative = findFirstByInitiativeId(existingRecord.initiativeId());
+            if (existingInitiative != null) {
+                return InitiativeMapper.toResponse(existingInitiative, "Initiative created successfully");
+            }
+            throw new IllegalStateException("Idempotency record does not match initiative");
+        }
 
         List<Initiative> existing = repository.findByInitiativeId(payload.initiativeId());
         if (!existing.isEmpty()) {
-            throw new IllegalStateException("Initiative already exists");
+            Initiative found = existing.get(0);
+            storeIdempotencyRecord(normalizedRequestId, found);
+            return InitiativeMapper.toResponse(found, "Initiative already exists");
         }
 
         String now = Instant.now().toString();
-        Initiative initiative = buildInitiative(payload, now, now);
+        String initiativeCode = repository.nextInitiativeCode();
+        Initiative initiative = buildInitiative(payload, now, now, initiativeCode);
 
         try {
             repository.saveIfAbsent(initiative);
         } catch (ConditionalCheckFailedException ex) {
+            Initiative found = findFirstByInitiativeId(payload.initiativeId());
+            if (found != null) {
+                storeIdempotencyRecord(normalizedRequestId, found);
+                return InitiativeMapper.toResponse(found, "Initiative already exists");
+            }
             throw new IllegalStateException("Initiative already exists");
         }
 
+        storeIdempotencyRecord(normalizedRequestId, initiative);
         return InitiativeMapper.toResponse(initiative, "Initiative created successfully");
     }
 
@@ -69,8 +96,9 @@ public class InitiativeService {
                 .filter(value -> value != null && !value.isBlank())
                 .findFirst()
                 .orElse(now);
+        String initiativeCode = resolveInitiativeCode(existing);
 
-        Initiative updated = buildInitiative(payload, createdAt, now);
+        Initiative updated = buildInitiative(payload, createdAt, now, initiativeCode);
         repository.save(updated);
 
         for (Initiative old : existing) {
@@ -104,7 +132,10 @@ public class InitiativeService {
                 .collect(Collectors.toList());
     }
 
-    private Initiative buildInitiative(InitiativePayload payload, String createdAt, String updatedAt) {
+    private Initiative buildInitiative(InitiativePayload payload,
+                                       String createdAt,
+                                       String updatedAt,
+                                       String initiativeCode) {
         String pk = InitiativeKeys.yearPk(payload.year());
         String sk = InitiativeKeys.initiativeSk(
                 payload.initiativeType(),
@@ -119,6 +150,7 @@ public class InitiativeService {
                 .initiativeId(payload.initiativeId())
                 .initiativeName(payload.initiativeName())
                 .initiativeNameLower(payload.initiativeNameLower())
+                .initiativeCode(initiativeCode)
                 .initiativeDescription(payload.initiativeDescription())
                 .initiativeType(payload.initiativeType())
                 .initiativeDueDate(payload.initiativeDueDate())
@@ -172,6 +204,76 @@ public class InitiativeService {
             throw new IllegalArgumentException("InitiativeStatus must be IN_PROGRESS or CONCLUDED");
         }
         return normalized;
+    }
+
+    private String resolveInitiativeCode(List<Initiative> existing) {
+        String current = existing.stream()
+                .map(Initiative::getInitiativeCode)
+                .filter(value -> value != null && !value.isBlank())
+                .findFirst()
+                .orElse(null);
+        if (current != null) {
+            return current;
+        }
+        if (existing.isEmpty()) {
+            return repository.nextInitiativeCode();
+        }
+
+        String candidate = repository.nextInitiativeCode();
+        Initiative target = existing.get(0);
+        boolean assigned = repository.assignInitiativeCodeIfAbsent(
+                target.getPk(),
+                target.getSk(),
+                candidate
+        );
+        if (assigned) {
+            return candidate;
+        }
+
+        List<Initiative> refreshed = repository.findByInitiativeId(target.getInitiativeId());
+        return refreshed.stream()
+                .map(Initiative::getInitiativeCode)
+                .filter(value -> value != null && !value.isBlank())
+                .findFirst()
+                .orElse(candidate);
+    }
+
+    private Initiative findFirstByInitiativeId(String initiativeId) {
+        if (initiativeId == null || initiativeId.isBlank()) {
+            return null;
+        }
+        List<Initiative> found = repository.findByInitiativeId(initiativeId);
+        return found.isEmpty() ? null : found.get(0);
+    }
+
+    private void storeIdempotencyRecord(String requestId, Initiative initiative) {
+        if (requestId == null || requestId.isBlank() || initiative == null) {
+            return;
+        }
+        String code = initiative.getInitiativeCode() == null ? "" : initiative.getInitiativeCode();
+        InitiativeIdempotencyRecord record = new InitiativeIdempotencyRecord(
+                requestId,
+                initiative.getInitiativeId(),
+                code,
+                Instant.now().toString()
+        );
+        repository.putCreateIdempotency(record);
+    }
+
+    private String normalizeRequestId(String requestId) {
+        if (requestId == null || requestId.isBlank()) {
+            return null;
+        }
+        String trimmed = requestId.trim();
+        if (trimmed.isEmpty()) {
+            return null;
+        }
+        try {
+            java.util.UUID.fromString(trimmed);
+        } catch (IllegalArgumentException ex) {
+            throw new IllegalArgumentException("Idempotency-Key must be a valid UUID");
+        }
+        return trimmed;
     }
 
     private String normalizeRequired(String value, String fieldName) {

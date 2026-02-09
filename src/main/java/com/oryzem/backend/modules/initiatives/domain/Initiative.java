@@ -21,6 +21,7 @@ public class Initiative {
     private String initiativeId;
     private String initiativeName;
     private String initiativeNameLower;
+    private String initiativeCode;
     private String initiativeDescription;
     private String initiativeType;
     private String initiativeDueDate;
@@ -54,6 +55,11 @@ public class Initiative {
     @DynamoDbAttribute("initiativeNameLower")
     public String getInitiativeNameLower() {
         return initiativeNameLower;
+    }
+
+    @DynamoDbAttribute("initiativeCode")
+    public String getInitiativeCode() {
+        return initiativeCode;
     }
 
     @DynamoDbAttribute("initiativeDescription")
@@ -109,6 +115,10 @@ public class Initiative {
 
     public void setInitiativeNameLower(String initiativeNameLower) {
         this.initiativeNameLower = initiativeNameLower;
+    }
+
+    public void setInitiativeCode(String initiativeCode) {
+        this.initiativeCode = initiativeCode;
     }
 
     public void setInitiativeDescription(String initiativeDescription) {

@@ -51,18 +51,18 @@ public class ProjectService {
     private final ProjectRepository projectRepository;
 
     public ProjectResponse createProject(CreateProjectRequest request, String requestId) {
-        requireRequestId(requestId);
+        String normalizedRequestId = normalizeRequestId(requestId);
         String projectId = request.projectId();
 
         Optional<MetaItem> metaOptional = projectRepository.getMeta(projectId, true);
         if (metaOptional.isPresent()) {
             MetaItem meta = metaOptional.get();
-            if (requestId.equals(meta.getLastRequestId())) {
+            if (sameRequestId(normalizedRequestId, meta.getLastRequestId())) {
                 if (meta.getStatus() == ProjectStatus.ACTIVE) {
                     return getProject(projectId);
                 }
                 if (meta.getStatus() == ProjectStatus.CREATING) {
-                    return resumeCreate(request, requestId);
+                    return resumeCreate(request, normalizedRequestId);
                 }
             }
             if (meta.getStatus() == ProjectStatus.UPDATING) {
@@ -78,7 +78,7 @@ public class ProjectService {
                 .projectId(projectId)
                 .projectName(request.projectName())
                 .status(ProjectStatus.CREATING)
-                .lastRequestId(requestId)
+                .lastRequestId(normalizedRequestId)
                 .updatedAt(now)
                 .entityType(ProjectEntityType.META)
                 .build();
@@ -88,9 +88,9 @@ public class ProjectService {
         } catch (ConditionalCheckFailedException ex) {
             MetaItem existing = projectRepository.getMeta(projectId, true)
                     .orElseThrow(() -> new IllegalStateException("Project already exists"));
-            if (requestId.equals(existing.getLastRequestId())
+            if (sameRequestId(normalizedRequestId, existing.getLastRequestId())
                     && existing.getStatus() == ProjectStatus.CREATING) {
-                return resumeCreate(request, requestId);
+                return resumeCreate(request, normalizedRequestId);
             }
             if (existing.getStatus() == ProjectStatus.UPDATING) {
                 throw new IllegalStateException("Project is being updated");
@@ -102,7 +102,7 @@ public class ProjectService {
         projectRepository.batchPutMilestones(writeSets.milestonesToPut());
         projectRepository.batchPutDateItems(writeSets.dateItemsToPut());
         try {
-            projectRepository.updateMetaStatus(projectId, ProjectStatus.ACTIVE, requestId, now, ProjectStatus.CREATING);
+            projectRepository.updateMetaStatus(projectId, ProjectStatus.ACTIVE, normalizedRequestId, now, ProjectStatus.CREATING);
         } catch (ConditionalCheckFailedException ex) {
             log.info("Meta already ACTIVE for project {}", projectId);
         }
@@ -116,11 +116,12 @@ public class ProjectService {
     }
 
     public ProjectResponse updateProject(String projectId, UpdateProjectRequest request, String requestId) {
-        requireRequestId(requestId);
+        String normalizedRequestId = normalizeRequestId(requestId);
         MetaItem meta = projectRepository.getMeta(projectId, true)
                 .orElseThrow(() -> new NotFoundException("Project not found"));
 
-        if (requestId.equals(meta.getLastRequestId())) {
+        boolean requestMatches = sameRequestId(normalizedRequestId, meta.getLastRequestId());
+        if (requestMatches) {
             if (meta.getStatus() == ProjectStatus.ACTIVE) {
                 return getProject(projectId);
             }
@@ -132,9 +133,9 @@ public class ProjectService {
         }
 
         Instant now = Instant.now();
-        if (!requestId.equals(meta.getLastRequestId())) {
+        if (!requestMatches) {
             try {
-                projectRepository.updateMetaStatus(projectId, ProjectStatus.UPDATING, requestId, now, ProjectStatus.ACTIVE);
+                projectRepository.updateMetaStatus(projectId, ProjectStatus.UPDATING, normalizedRequestId, now, ProjectStatus.ACTIVE);
             } catch (ConditionalCheckFailedException ex) {
                 throw new IllegalStateException("Project is locked for update");
             }
@@ -149,7 +150,7 @@ public class ProjectService {
         projectRepository.batchPutDateItems(diff.dateItemsToPut());
 
         try {
-            projectRepository.updateMetaStatus(projectId, ProjectStatus.ACTIVE, requestId, now, ProjectStatus.UPDATING);
+            projectRepository.updateMetaStatus(projectId, ProjectStatus.ACTIVE, normalizedRequestId, now, ProjectStatus.UPDATING);
         } catch (ConditionalCheckFailedException ex) {
             log.info("Meta already ACTIVE for project {}", projectId);
         }
@@ -521,15 +522,27 @@ public class ProjectService {
         return days;
     }
 
-    private void requireRequestId(String requestId) {
+    private String normalizeRequestId(String requestId) {
         if (requestId == null || requestId.isBlank()) {
-            throw new IllegalArgumentException("Idempotency-Key is required");
+            return null;
+        }
+        String trimmed = requestId.trim();
+        if (trimmed.isEmpty()) {
+            return null;
         }
         try {
-            UUID.fromString(requestId);
+            UUID.fromString(trimmed);
         } catch (IllegalArgumentException ex) {
             throw new IllegalArgumentException("Idempotency-Key must be a valid UUID");
         }
+        return trimmed;
+    }
+
+    private boolean sameRequestId(String left, String right) {
+        if (left == null || right == null) {
+            return false;
+        }
+        return left.equals(right);
     }
 
     private record CellKey(int als, Gate gate, Phase phase) {
