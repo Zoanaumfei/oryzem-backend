@@ -16,6 +16,7 @@ import java.util.List;
 public class MarketplaceOrderPayload {
 
     private OrderSource source;
+    private String merchantId;
     private String externalOrderId;
     private String customerName;
 

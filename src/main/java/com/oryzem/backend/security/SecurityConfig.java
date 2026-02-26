@@ -23,6 +23,7 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
+                        .requestMatchers("/api/integrations/ifood/webhook").permitAll()
                         .requestMatchers("/api/v1/projects/**", "/api/v1/birthdays/**")
                         .hasAnyAuthority("Admin-User", "Internal-User")
                         .requestMatchers("/api/v1/items/**", "/api/v1/files/**")
@@ -49,6 +50,7 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
+                        .requestMatchers("/api/integrations/ifood/webhook").permitAll()
                         .requestMatchers("/api/v1/projects/**", "/api/v1/birthdays/**")
                         .hasAnyAuthority("Admin-User", "Internal-User")
                         .requestMatchers("/api/v1/items/**", "/api/v1/files/**")

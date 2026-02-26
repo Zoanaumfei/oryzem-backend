@@ -119,6 +119,8 @@ Response `200 OK`:
 
 Create order (internal or external normalized).
 
+Note: for external orders (`source != INTERNAL`), `merchantId` and `externalId` are required.
+
 Request:
 
 ```json
@@ -142,6 +144,7 @@ Response `201 Created`:
 {
   "id": "de358f98-09c5-4e29-b250-73028fef2228",
   "source": "INTERNAL",
+  "merchantId": null,
   "externalId": null,
   "customerName": "Cliente Balcao",
   "items": [
@@ -195,11 +198,23 @@ Insufficient stock response `409 Conflict`:
 
 Cancel order and restock when order was previously allocated.
 
+### POST `/api/orders/{id}/prepare`
+
+Move order from `CONFIRMED` to `PREPARING`.
+
+### POST `/api/orders/{id}/dispatch`
+
+Move order from `PREPARING` to `DISPATCHED`.
+
+### POST `/api/orders/{id}/complete`
+
+Move order from `DISPATCHED` to `COMPLETED`.
+
 ## 4) Integrations sync
 
 ### POST `/api/integrations/sync/orders`
 
-Manual import from stub marketplace clients.
+Manual import from configured marketplace clients.
 
 Response `200 OK`:
 
@@ -216,12 +231,51 @@ Response `200 OK`:
 }
 ```
 
+### POST `/api/integrations/ifood/webhook`
+
+iFood webhook endpoint (principal channel). Receives event array payload and processes `PLC` events.
+When `IFOOD_WEBHOOK_SECRET` is configured, requests must include `x-ifood-signature`.
+
+### POST `/api/integrations/ifood/reconcile`
+
+Manual reconciliation from iFood polling (fallback channel).
+
 ## Integration notes (MVP)
 
 - `MarketplaceClient` exposes:
   - `fetchNewOrders()`
-  - `ackOrder(externalOrderId)`
-  - `updateOrderStatus(externalOrderId, status)`
-- `IfoodMarketplaceClient` and `NineNineMarketplaceClient` are stubs with TODO comments for real API calls.
+  - `ackOrder(merchantId, externalOrderId)`
+  - `updateOrderStatus(merchantId, externalOrderId, status)`
+- `IfoodMarketplaceClient` now uses real iFood API calls for:
+  - OAuth (`client_credentials`) with in-memory token cache
+  - Polling (`/events/v1.0/events:polling`)
+  - Acknowledgment (`/events/v1.0/events/acknowledgment`)
+  - Order details (`/order/v1.0/orders/{id}`) for payload normalization
+  - Outbound status commands:
+    - `CONFIRMED` -> `/order/v1.0/orders/{id}/confirm`
+    - `PREPARING` -> `/order/v1.0/orders/{id}/startPreparation`
+    - `DISPATCHED` -> `/order/v1.0/orders/{id}/dispatch`
+    - `CANCELED` -> `/order/v1.0/orders/{id}/cancellationReasons` + `/order/v1.0/orders/{id}/requestCancellation`
+- `NineNineMarketplaceClient` remains a stub.
 - Payload normalization is done by `MarketplaceOrderMapper`.
 - Mapper resolves products by `productId` or by `sku` from catalog.
+- External order idempotency/dedup key is `source + merchantId + externalOrderId`.
+- Webhook channel is available for iFood and polling can be enabled for reconciliation.
+- Webhook dedupe can be durably persisted in DynamoDB (`merchantId + eventId`) when event ledger is enabled.
+
+Required env vars for iFood:
+
+- `IFOOD_ENABLED=true`
+- `IFOOD_CLIENT_ID=...`
+- `IFOOD_CLIENT_SECRET=...`
+- `IFOOD_MERCHANT_IDS=<merchant-uuid[,merchant-uuid]>`
+- Optional:
+  - `IFOOD_WEBHOOK_ENABLED=true`
+  - `IFOOD_WEBHOOK_SECRET=...`
+  - `IFOOD_EVENT_LEDGER_ENABLED=true`
+  - `IFOOD_EVENT_LEDGER_TTL_DAYS=7`
+  - `DYNAMODB_TABLE_IFOOD_EVENT_LEDGER=<table-name>`
+  - `IFOOD_RECONCILIATION_ENABLED=true`
+  - `IFOOD_RECONCILIATION_INTERVAL_SECONDS=300`
+  - `IFOOD_EVENT_TYPES=PLC` (default)
+  - `IFOOD_BASE_URL`, `IFOOD_PREFERRED_CANCELLATION_CODE`, `IFOOD_CANCELLATION_REASON`, `IFOOD_REQUEST_TIMEOUT_SECONDS`, `IFOOD_TOKEN_REFRESH_SKEW_SECONDS`

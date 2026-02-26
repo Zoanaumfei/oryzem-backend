@@ -49,4 +49,22 @@ public class OrderController {
     public ResponseEntity<OrderResponse> cancelOrder(@PathVariable String id) {
         return ResponseEntity.ok(orderService.cancelOrder(id));
     }
+
+    @PostMapping("/{id}/prepare")
+    @Operation(summary = "Mark order as preparing")
+    public ResponseEntity<OrderResponse> prepareOrder(@PathVariable String id) {
+        return ResponseEntity.ok(orderService.startPreparing(id));
+    }
+
+    @PostMapping("/{id}/dispatch")
+    @Operation(summary = "Mark order as dispatched")
+    public ResponseEntity<OrderResponse> dispatchOrder(@PathVariable String id) {
+        return ResponseEntity.ok(orderService.dispatchOrder(id));
+    }
+
+    @PostMapping("/{id}/complete")
+    @Operation(summary = "Mark order as completed")
+    public ResponseEntity<OrderResponse> completeOrder(@PathVariable String id) {
+        return ResponseEntity.ok(orderService.completeOrder(id));
+    }
 }

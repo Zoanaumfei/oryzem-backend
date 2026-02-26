@@ -22,6 +22,8 @@ public class CreateOrderRequest {
     @NotNull(message = "source is required")
     private OrderSource source;
 
+    private String merchantId;
+
     private String externalId;
 
     @NotBlank(message = "customerName is required")

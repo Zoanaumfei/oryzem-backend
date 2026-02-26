@@ -25,6 +25,9 @@ public class MarketplaceOrderMapper {
         if (payload.getExternalOrderId() == null || payload.getExternalOrderId().isBlank()) {
             throw new IllegalArgumentException("Marketplace externalOrderId is required");
         }
+        if (payload.getMerchantId() == null || payload.getMerchantId().isBlank()) {
+            throw new IllegalArgumentException("Marketplace merchantId is required");
+        }
 
         List<OrderItemRequest> items = payload.getItems().stream()
                 .map(this::toItemRequest)
@@ -32,6 +35,7 @@ public class MarketplaceOrderMapper {
 
         return CreateOrderRequest.builder()
                 .source(payload.getSource())
+                .merchantId(payload.getMerchantId().trim())
                 .externalId(payload.getExternalOrderId().trim())
                 .customerName(defaultCustomerName(payload.getCustomerName()))
                 .items(items)

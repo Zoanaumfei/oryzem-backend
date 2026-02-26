@@ -96,6 +96,36 @@ class OrderServiceTest {
         assertThat(inventoryService.getMovementsByOrderId(created.getId())).hasSize(1);
     }
 
+    @Test
+    void shouldAdvanceOrderLifecycleToCompleted() {
+        Product product = createProduct("PASTA-BOLONHESA", "Pasta Bolonhesa", new BigDecimal("39.90"));
+        addStock(product.getId(), 4);
+
+        OrderResponse created = orderService.createOrder(buildInternalOrder(product.getId(), 1));
+        OrderResponse confirmed = orderService.confirmOrder(created.getId());
+        OrderResponse preparing = orderService.startPreparing(created.getId());
+        OrderResponse dispatched = orderService.dispatchOrder(created.getId());
+        OrderResponse completed = orderService.completeOrder(created.getId());
+
+        assertThat(confirmed.getStatus()).isEqualTo(OrderStatus.CONFIRMED);
+        assertThat(preparing.getStatus()).isEqualTo(OrderStatus.PREPARING);
+        assertThat(dispatched.getStatus()).isEqualTo(OrderStatus.DISPATCHED);
+        assertThat(completed.getStatus()).isEqualTo(OrderStatus.COMPLETED);
+    }
+
+    @Test
+    void shouldRequirePreparingBeforeDispatch() {
+        Product product = createProduct("LASANHA", "Lasanha", new BigDecimal("42.00"));
+        addStock(product.getId(), 4);
+
+        OrderResponse created = orderService.createOrder(buildInternalOrder(product.getId(), 1));
+        orderService.confirmOrder(created.getId());
+
+        assertThatThrownBy(() -> orderService.dispatchOrder(created.getId()))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("must be preparing before dispatch");
+    }
+
     private Product createProduct(String sku, String name, BigDecimal unitPrice) {
         Product product = Product.builder()
                 .id(UUID.randomUUID().toString())

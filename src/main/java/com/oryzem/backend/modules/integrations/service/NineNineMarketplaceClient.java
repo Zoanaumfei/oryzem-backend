@@ -15,9 +15,15 @@ import java.util.List;
 public class NineNineMarketplaceClient implements MarketplaceClient {
 
     @Override
+    public OrderSource supportedSource() {
+        return OrderSource.NINENINE;
+    }
+
+    @Override
     public List<MarketplaceOrderPayload> fetchNewOrders() {
         MarketplaceOrderPayload stubOrder = MarketplaceOrderPayload.builder()
                 .source(OrderSource.NINENINE)
+                .merchantId("99FOOD-STUB-MERCHANT")
                 .externalOrderId("99FOOD-STUB-2001")
                 .customerName("Cliente 99Food")
                 .items(List.of(
@@ -33,14 +39,14 @@ public class NineNineMarketplaceClient implements MarketplaceClient {
     }
 
     @Override
-    public void ackOrder(String externalOrderId) {
-        log.info("99Food ack order {}", externalOrderId);
+    public void ackOrder(String merchantId, String externalOrderId) {
+        log.info("99Food ack order {} (merchant={})", externalOrderId, merchantId);
         // TODO Integrate with 99Food API acknowledgement endpoint.
     }
 
     @Override
-    public void updateOrderStatus(String externalOrderId, OrderStatus status) {
-        log.info("99Food update order {} to {}", externalOrderId, status);
+    public void updateOrderStatus(String merchantId, String externalOrderId, OrderStatus status) {
+        log.info("99Food update order {} to {} (merchant={})", externalOrderId, status, merchantId);
         // TODO Integrate with 99Food API order status endpoint.
     }
 }

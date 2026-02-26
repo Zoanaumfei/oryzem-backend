@@ -18,6 +18,7 @@ public class Order {
 
     private String id;
     private OrderSource source;
+    private String merchantId;
     private String externalId;
     private String customerName;
 

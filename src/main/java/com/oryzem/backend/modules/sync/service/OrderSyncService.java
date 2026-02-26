@@ -43,10 +43,12 @@ public class OrderSyncService {
                         importedCount++;
                     }
                     orderIds.add(response.getId());
-                    client.ackOrder(payload.getExternalOrderId());
+                    client.ackOrder(payload.getMerchantId(), payload.getExternalOrderId());
                 } catch (Exception ex) {
                     failedCount++;
                     String error = "Failed to sync external order "
+                            + payload.getMerchantId()
+                            + "/"
                             + payload.getExternalOrderId()
                             + ": " + ex.getMessage();
                     errors.add(error);

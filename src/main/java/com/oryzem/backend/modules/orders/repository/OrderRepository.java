@@ -22,9 +22,14 @@ public class OrderRepository {
         ordersById.put(copy.getId(), copy);
 
         if (copy.getSource() != OrderSource.INTERNAL
+                && copy.getMerchantId() != null
+                && !copy.getMerchantId().isBlank()
                 && copy.getExternalId() != null
                 && !copy.getExternalId().isBlank()) {
-            orderIdByExternalKey.put(buildExternalKey(copy.getSource(), copy.getExternalId()), copy.getId());
+            orderIdByExternalKey.put(
+                    buildExternalKey(copy.getSource(), copy.getMerchantId(), copy.getExternalId()),
+                    copy.getId()
+            );
         }
         return copy(copy);
     }
@@ -33,12 +38,12 @@ public class OrderRepository {
         return Optional.ofNullable(ordersById.get(orderId)).map(this::copy);
     }
 
-    public Optional<Order> findByExternalId(OrderSource source, String externalId) {
-        if (source == null || externalId == null || externalId.isBlank()) {
+    public Optional<Order> findByExternalId(OrderSource source, String merchantId, String externalId) {
+        if (source == null || merchantId == null || merchantId.isBlank() || externalId == null || externalId.isBlank()) {
             return Optional.empty();
         }
 
-        String orderId = orderIdByExternalKey.get(buildExternalKey(source, externalId));
+        String orderId = orderIdByExternalKey.get(buildExternalKey(source, merchantId, externalId));
         if (orderId == null) {
             return Optional.empty();
         }
@@ -53,8 +58,8 @@ public class OrderRepository {
         return orders;
     }
 
-    private String buildExternalKey(OrderSource source, String externalId) {
-        return source.name() + "::" + externalId.trim();
+    private String buildExternalKey(OrderSource source, String merchantId, String externalId) {
+        return source.name() + "::" + merchantId.trim() + "::" + externalId.trim();
     }
 
     private Order copy(Order order) {
@@ -70,6 +75,7 @@ public class OrderRepository {
         return Order.builder()
                 .id(order.getId())
                 .source(order.getSource())
+                .merchantId(order.getMerchantId())
                 .externalId(order.getExternalId())
                 .customerName(order.getCustomerName())
                 .items(copiedItems)
