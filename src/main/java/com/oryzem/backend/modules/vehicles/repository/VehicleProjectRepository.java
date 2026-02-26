@@ -62,4 +62,12 @@ public class VehicleProjectRepository {
         }
         return items;
     }
+
+    public List<VehicleProject> findAll() {
+        List<VehicleProject> items = new ArrayList<>();
+        for (var page : getTable().scan()) {
+            items.addAll(page.items());
+        }
+        return items;
+    }
 }

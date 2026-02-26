@@ -2,6 +2,7 @@ package com.oryzem.backend.modules.vehicles.service;
 
 import com.oryzem.backend.modules.vehicles.domain.VehicleProject;
 import com.oryzem.backend.modules.vehicles.dto.VehicleProjectResponse;
+import com.oryzem.backend.modules.vehicles.dto.VehicleProjectSummaryResponse;
 import com.oryzem.backend.modules.vehicles.dto.VehicleProjectUpsertRequest;
 
 public final class VehicleProjectMapper {
@@ -77,5 +78,19 @@ public final class VehicleProjectMapper {
                 .updatedAt(domain.getUpdatedAt())
                 .updatedBy(domain.getUpdatedBy())
                 .build();
+    }
+
+    public static VehicleProjectSummaryResponse toSummary(VehicleProject domain) {
+        return new VehicleProjectSummaryResponse(
+                domain.getProjectId(),
+                domain.getProjectName(),
+                domain.getCustomer(),
+                domain.getAls(),
+                domain.getSop(),
+                domain.getStatus(),
+                domain.getRgTemplate(),
+                domain.getProgress(),
+                domain.getUpdatedAt()
+        );
     }
 }

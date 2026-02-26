@@ -3,6 +3,7 @@ package com.oryzem.backend.modules.vehicles.service;
 import com.oryzem.backend.modules.vehicles.domain.VehicleProject;
 import com.oryzem.backend.modules.vehicles.domain.VehicleProjectNotFoundException;
 import com.oryzem.backend.modules.vehicles.dto.VehicleProjectResponse;
+import com.oryzem.backend.modules.vehicles.dto.VehicleProjectSummaryResponse;
 import com.oryzem.backend.modules.vehicles.dto.VehicleProjectUpsertRequest;
 import com.oryzem.backend.modules.vehicles.repository.VehicleProjectRepository;
 import lombok.RequiredArgsConstructor;
@@ -42,6 +43,12 @@ public class VehicleProjectService {
         String normalizedProjectId = normalizeRequiredText(projectId, "projectId");
         return repository.findByProjectId(normalizedProjectId).stream()
                 .map(VehicleProjectMapper::toResponse)
+                .toList();
+    }
+
+    public List<VehicleProjectSummaryResponse> listAll() {
+        return repository.findAll().stream()
+                .map(VehicleProjectMapper::toSummary)
                 .toList();
     }
 
