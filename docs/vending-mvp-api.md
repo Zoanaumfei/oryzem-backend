@@ -262,6 +262,7 @@ Manual reconciliation from iFood polling (fallback channel).
 - External order idempotency/dedup key is `source + merchantId + externalOrderId`.
 - Webhook channel is available for iFood and polling can be enabled for reconciliation.
 - Webhook dedupe can be durably persisted in DynamoDB (`merchantId + eventId`) when event ledger is enabled.
+- Ledger events are tracked with status (`RECEIVED`, `PROCESSED`, `FAILED`), allowing retry of failed events with the same `eventId`.
 
 Required env vars for iFood:
 

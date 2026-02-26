@@ -7,6 +7,7 @@ import com.oryzem.backend.modules.integrations.domain.IfoodEventLedgerEntry;
 import com.oryzem.backend.modules.integrations.domain.MarketplaceOrderPayload;
 import com.oryzem.backend.modules.integrations.dto.IfoodIngestionResponse;
 import com.oryzem.backend.modules.integrations.repository.IfoodEventLedgerRepository;
+import com.oryzem.backend.modules.integrations.repository.IfoodEventLedgerRepository.RegistrationOutcome;
 import com.oryzem.backend.modules.orders.dto.CreateOrderRequest;
 import com.oryzem.backend.modules.orders.dto.OrderResponse;
 import com.oryzem.backend.modules.orders.service.OrderService;
@@ -39,7 +40,8 @@ public class IfoodIngestionService {
     private final IfoodEventLedgerRepository eventLedgerRepository;
     private final ObjectMapper objectMapper;
 
-    private final Map<String, Instant> webhookEventLedger = new ConcurrentHashMap<>();
+    private final Map<String, Instant> webhookProcessedEventLedger = new ConcurrentHashMap<>();
+    private final Map<String, Instant> webhookEventsInFlight = new ConcurrentHashMap<>();
     private final AtomicBoolean eventLedgerConfigWarned = new AtomicBoolean(false);
 
     public IfoodIngestionResponse ingestFromPolling() {
@@ -102,18 +104,22 @@ public class IfoodIngestionService {
 
             for (JsonNode eventNode : root) {
                 processed++;
-                try {
-                    IfoodWebhookEvent event = parseWebhookEvent(eventNode);
-                    if (event == null || event.eventId() == null) {
-                        continue;
-                    }
+                IfoodWebhookEvent event = parseWebhookEvent(eventNode);
+                if (event == null || event.eventId() == null) {
+                    continue;
+                }
 
-                    if (!registerIfFirstSeen(event)) {
-                        duplicates++;
+                try {
+                    RegistrationOutcome registration = registerForProcessing(event);
+                    if (!registration.shouldProcess()) {
+                        if (registration.shouldCountAsDuplicate()) {
+                            duplicates++;
+                        }
                         continue;
                     }
 
                     if (!"PLC".equalsIgnoreCase(event.code())) {
+                        markProcessed(event);
                         continue;
                     }
 
@@ -124,11 +130,13 @@ public class IfoodIngestionService {
                     } else {
                         imported++;
                     }
+                    markProcessed(event);
                 } catch (Exception ex) {
                     failed++;
                     String error = "Webhook failed for event: " + ex.getMessage();
                     errors.add(error);
                     log.warn(error, ex);
+                    markFailed(event, ex.getMessage());
                 }
             }
         } catch (Exception ex) {
@@ -149,33 +157,81 @@ public class IfoodIngestionService {
         return orderService.createOrder(request);
     }
 
-    private boolean registerIfFirstSeen(IfoodWebhookEvent event) {
-        if (ifoodProperties.eventLedgerEnabled()) {
-            if (!eventLedgerRepository.isConfigured()) {
-                if (eventLedgerConfigWarned.compareAndSet(false, true)) {
-                    log.warn("iFood event ledger is enabled but app.dynamodb.tables.ifood-event-ledger is not configured. Falling back to in-memory dedupe.");
-                }
-                return registerInMemory(event);
-            }
-
+    private RegistrationOutcome registerForProcessing(IfoodWebhookEvent event) {
+        if (useDurableLedger()) {
             try {
-                return eventLedgerRepository.saveIfAbsent(toLedgerEntry(event));
+                return eventLedgerRepository.registerForProcessing(toLedgerEntry(event));
             } catch (Exception ex) {
-                log.warn("Failed to persist iFood event in ledger. Falling back to in-memory dedupe: {}", ex.getMessage());
+                log.warn("Failed to register iFood event in durable ledger. Falling back to in-memory flow: {}", ex.getMessage());
                 return registerInMemory(event);
             }
         }
         return registerInMemory(event);
     }
 
-    private boolean registerInMemory(IfoodWebhookEvent event) {
+    private void markProcessed(IfoodWebhookEvent event) {
+        if (useDurableLedger()) {
+            try {
+                eventLedgerRepository.markProcessed(toLedgerEntry(event));
+                return;
+            } catch (Exception ex) {
+                log.warn("Failed to mark iFood event as PROCESSED in durable ledger. Falling back to in-memory flow: {}", ex.getMessage());
+            }
+        }
+        markProcessedInMemory(event);
+    }
+
+    private void markFailed(IfoodWebhookEvent event, String errorMessage) {
+        if (useDurableLedger()) {
+            try {
+                eventLedgerRepository.markFailed(toLedgerEntry(event), errorMessage);
+                return;
+            } catch (Exception ex) {
+                log.warn("Failed to mark iFood event as FAILED in durable ledger. Falling back to in-memory flow: {}", ex.getMessage());
+            }
+        }
+        markFailedInMemory(event);
+    }
+
+    private boolean useDurableLedger() {
+        if (!ifoodProperties.eventLedgerEnabled()) {
+            return false;
+        }
+        if (!eventLedgerRepository.isConfigured()) {
+            if (eventLedgerConfigWarned.compareAndSet(false, true)) {
+                log.warn("iFood event ledger is enabled but app.dynamodb.tables.ifood-event-ledger is not configured. Falling back to in-memory dedupe.");
+            }
+            return false;
+        }
+        return true;
+    }
+
+    private RegistrationOutcome registerInMemory(IfoodWebhookEvent event) {
         String ledgerKey = event.merchantId() + "::" + event.eventId();
-        return webhookEventLedger.putIfAbsent(ledgerKey, Instant.now()) == null;
+        if (webhookProcessedEventLedger.containsKey(ledgerKey)) {
+            return RegistrationOutcome.DUPLICATE_PROCESSED;
+        }
+        Instant previous = webhookEventsInFlight.putIfAbsent(ledgerKey, Instant.now());
+        if (previous != null) {
+            return RegistrationOutcome.IN_PROGRESS;
+        }
+        return RegistrationOutcome.ACQUIRED;
+    }
+
+    private void markProcessedInMemory(IfoodWebhookEvent event) {
+        String ledgerKey = event.merchantId() + "::" + event.eventId();
+        webhookEventsInFlight.remove(ledgerKey);
+        webhookProcessedEventLedger.put(ledgerKey, Instant.now());
+    }
+
+    private void markFailedInMemory(IfoodWebhookEvent event) {
+        String ledgerKey = event.merchantId() + "::" + event.eventId();
+        webhookEventsInFlight.remove(ledgerKey);
     }
 
     private IfoodEventLedgerEntry toLedgerEntry(IfoodWebhookEvent event) {
-        long processedAtEpochSeconds = Instant.now().getEpochSecond();
-        long expiresAtEpochSeconds = processedAtEpochSeconds + (long) ifoodProperties.eventLedgerTtlDays() * 24L * 60L * 60L;
+        long nowEpochSeconds = Instant.now().getEpochSecond();
+        long expiresAtEpochSeconds = nowEpochSeconds + (long) ifoodProperties.eventLedgerTtlDays() * 24L * 60L * 60L;
 
         IfoodEventLedgerEntry entry = new IfoodEventLedgerEntry();
         entry.setMerchantId(event.merchantId());
@@ -184,7 +240,7 @@ public class IfoodIngestionService {
         entry.setOrderId(event.orderId());
         entry.setEventCode(event.code());
         entry.setSource("IFOOD");
-        entry.setProcessedAtEpochSeconds(processedAtEpochSeconds);
+        entry.setReceivedAtEpochSeconds(nowEpochSeconds);
         entry.setExpiresAtEpochSeconds(expiresAtEpochSeconds);
         return entry;
     }

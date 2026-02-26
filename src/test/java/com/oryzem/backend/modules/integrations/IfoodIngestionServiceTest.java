@@ -5,6 +5,7 @@ import com.oryzem.backend.modules.integrations.config.IfoodProperties;
 import com.oryzem.backend.modules.integrations.domain.MarketplaceOrderPayload;
 import com.oryzem.backend.modules.integrations.dto.IfoodIngestionResponse;
 import com.oryzem.backend.modules.integrations.repository.IfoodEventLedgerRepository;
+import com.oryzem.backend.modules.integrations.repository.IfoodEventLedgerRepository.RegistrationOutcome;
 import com.oryzem.backend.modules.integrations.service.IfoodIngestionService;
 import com.oryzem.backend.modules.integrations.service.IfoodMarketplaceClient;
 import com.oryzem.backend.modules.integrations.service.MarketplaceOrderMapper;
@@ -55,7 +56,7 @@ class IfoodIngestionServiceTest {
         CreateOrderRequest request = CreateOrderRequest.builder().build();
         OrderResponse created = OrderResponse.builder().message("Order created successfully").build();
 
-        when(eventLedgerRepository.saveIfAbsent(any())).thenReturn(true);
+        when(eventLedgerRepository.registerForProcessing(any())).thenReturn(RegistrationOutcome.ACQUIRED);
         when(ifoodClient.fetchOrderById("merchant-1", "order-1")).thenReturn(payload);
         when(marketplaceOrderMapper.toCreateOrderRequest(payload)).thenReturn(request);
         when(orderService.createOrder(request)).thenReturn(created);
@@ -70,14 +71,15 @@ class IfoodIngestionServiceTest {
         assertThat(response.getDuplicateOrders()).isEqualTo(0);
         assertThat(response.getFailedEvents()).isEqualTo(0);
 
-        verify(eventLedgerRepository, times(1)).saveIfAbsent(any());
+        verify(eventLedgerRepository, times(1)).registerForProcessing(any());
+        verify(eventLedgerRepository, times(1)).markProcessed(any());
         verify(ifoodClient, times(1)).fetchOrderById("merchant-1", "order-1");
     }
 
     @Test
     void shouldSkipDuplicateWebhookEventAlreadyInLedger() {
         IfoodIngestionService service = buildService(true, true);
-        when(eventLedgerRepository.saveIfAbsent(any())).thenReturn(false);
+        when(eventLedgerRepository.registerForProcessing(any())).thenReturn(RegistrationOutcome.DUPLICATE_PROCESSED);
 
         IfoodIngestionResponse response = service.ingestFromWebhook(
                 "[{\"id\":\"evt-2\",\"code\":\"PLC\",\"orderId\":\"order-2\",\"merchantId\":\"merchant-2\"}]",
@@ -91,6 +93,7 @@ class IfoodIngestionServiceTest {
 
         verify(ifoodClient, never()).fetchOrderById(any(), any());
         verify(orderService, never()).createOrder(any());
+        verify(eventLedgerRepository, never()).markProcessed(any());
     }
 
     @Test
@@ -119,8 +122,74 @@ class IfoodIngestionServiceTest {
         assertThat(second.getImportedOrders()).isEqualTo(0);
         assertThat(second.getDuplicateOrders()).isEqualTo(1);
 
-        verify(eventLedgerRepository, never()).saveIfAbsent(any());
+        verify(eventLedgerRepository, never()).registerForProcessing(any());
         verify(orderService, times(1)).createOrder(ArgumentMatchers.eq(request));
+    }
+
+    @Test
+    void shouldAllowRetryForFailedEventWhenLedgerDisabled() {
+        IfoodIngestionService service = buildService(false, false);
+
+        MarketplaceOrderPayload payload = MarketplaceOrderPayload.builder()
+                .source(OrderSource.IFOOD)
+                .merchantId("merchant-4")
+                .externalOrderId("order-4")
+                .customerName("Cliente")
+                .build();
+        CreateOrderRequest request = CreateOrderRequest.builder().build();
+        OrderResponse created = OrderResponse.builder().message("Order created successfully").build();
+
+        when(ifoodClient.fetchOrderById("merchant-4", "order-4")).thenReturn(payload);
+        when(marketplaceOrderMapper.toCreateOrderRequest(payload)).thenReturn(request);
+        when(orderService.createOrder(request))
+                .thenThrow(new IllegalArgumentException("Unknown marketplace sku: 9184"))
+                .thenReturn(created);
+
+        String payloadJson = "[{\"id\":\"evt-4\",\"code\":\"PLC\",\"orderId\":\"order-4\",\"merchantId\":\"merchant-4\"}]";
+
+        IfoodIngestionResponse first = service.ingestFromWebhook(payloadJson, null);
+        IfoodIngestionResponse second = service.ingestFromWebhook(payloadJson, null);
+
+        assertThat(first.getFailedEvents()).isEqualTo(1);
+        assertThat(first.getImportedOrders()).isEqualTo(0);
+        assertThat(second.getImportedOrders()).isEqualTo(1);
+        assertThat(second.getDuplicateOrders()).isEqualTo(0);
+
+        verify(orderService, times(2)).createOrder(ArgumentMatchers.eq(request));
+    }
+
+    @Test
+    void shouldRetryFailedEventWhenDurableLedgerAllowsAcquireRetry() {
+        IfoodIngestionService service = buildService(true, true);
+
+        MarketplaceOrderPayload payload = MarketplaceOrderPayload.builder()
+                .source(OrderSource.IFOOD)
+                .merchantId("merchant-5")
+                .externalOrderId("order-5")
+                .customerName("Cliente")
+                .build();
+        CreateOrderRequest request = CreateOrderRequest.builder().build();
+        OrderResponse created = OrderResponse.builder().message("Order created successfully").build();
+
+        when(eventLedgerRepository.registerForProcessing(any()))
+                .thenReturn(RegistrationOutcome.ACQUIRED)
+                .thenReturn(RegistrationOutcome.ACQUIRED_RETRY);
+        when(ifoodClient.fetchOrderById("merchant-5", "order-5")).thenReturn(payload);
+        when(marketplaceOrderMapper.toCreateOrderRequest(payload)).thenReturn(request);
+        when(orderService.createOrder(request))
+                .thenThrow(new IllegalArgumentException("Unknown marketplace sku: 9184"))
+                .thenReturn(created);
+
+        String payloadJson = "[{\"id\":\"evt-5\",\"code\":\"PLC\",\"orderId\":\"order-5\",\"merchantId\":\"merchant-5\"}]";
+
+        IfoodIngestionResponse first = service.ingestFromWebhook(payloadJson, null);
+        IfoodIngestionResponse second = service.ingestFromWebhook(payloadJson, null);
+
+        assertThat(first.getFailedEvents()).isEqualTo(1);
+        assertThat(second.getImportedOrders()).isEqualTo(1);
+
+        verify(eventLedgerRepository, times(1)).markFailed(any(), any());
+        verify(eventLedgerRepository, times(1)).markProcessed(any());
     }
 
     private IfoodIngestionService buildService(boolean eventLedgerEnabled, boolean ledgerConfigured) {

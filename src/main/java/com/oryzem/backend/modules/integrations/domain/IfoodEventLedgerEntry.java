@@ -8,12 +8,20 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortK
 @DynamoDbBean
 public class IfoodEventLedgerEntry {
 
+    public static final String STATUS_RECEIVED = "RECEIVED";
+    public static final String STATUS_PROCESSED = "PROCESSED";
+    public static final String STATUS_FAILED = "FAILED";
+
     private String merchantId;
     private String eventId;
     private String channel;
     private String orderId;
     private String eventCode;
     private String source;
+    private String status;
+    private Integer attempts;
+    private String lastError;
+    private Long receivedAtEpochSeconds;
     private Long processedAtEpochSeconds;
     private Long expiresAtEpochSeconds;
 
@@ -71,6 +79,42 @@ public class IfoodEventLedgerEntry {
 
     public void setSource(String source) {
         this.source = source;
+    }
+
+    @DynamoDbAttribute("status")
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    @DynamoDbAttribute("attempts")
+    public Integer getAttempts() {
+        return attempts;
+    }
+
+    public void setAttempts(Integer attempts) {
+        this.attempts = attempts;
+    }
+
+    @DynamoDbAttribute("lastError")
+    public String getLastError() {
+        return lastError;
+    }
+
+    public void setLastError(String lastError) {
+        this.lastError = lastError;
+    }
+
+    @DynamoDbAttribute("receivedAtEpochSeconds")
+    public Long getReceivedAtEpochSeconds() {
+        return receivedAtEpochSeconds;
+    }
+
+    public void setReceivedAtEpochSeconds(Long receivedAtEpochSeconds) {
+        this.receivedAtEpochSeconds = receivedAtEpochSeconds;
     }
 
     @DynamoDbAttribute("processedAtEpochSeconds")
