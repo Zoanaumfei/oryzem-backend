@@ -23,7 +23,7 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
-                        .requestMatchers("/api/v1/projects/**", "/api/v1/due/**", "/api/v1/birthdays/**")
+                        .requestMatchers("/api/v1/projects/**", "/api/v1/birthdays/**")
                         .hasAnyAuthority("Admin-User", "Internal-User")
                         .requestMatchers("/api/v1/items/**", "/api/v1/files/**")
                         .hasAnyAuthority("Admin-User", "Internal-User", "External-User")
@@ -49,7 +49,7 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
-                        .requestMatchers("/api/v1/projects/**", "/api/v1/due/**", "/api/v1/birthdays/**")
+                        .requestMatchers("/api/v1/projects/**", "/api/v1/birthdays/**")
                         .hasAnyAuthority("Admin-User", "Internal-User")
                         .requestMatchers("/api/v1/items/**", "/api/v1/files/**")
                         .hasAnyAuthority("Admin-User", "Internal-User", "External-User")
