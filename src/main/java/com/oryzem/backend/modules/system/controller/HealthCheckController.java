@@ -1,6 +1,10 @@
 package com.oryzem.backend.modules.system.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -8,7 +12,15 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
-import software.amazon.awssdk.services.dynamodb.model.*;
+import software.amazon.awssdk.services.dynamodb.model.DescribeTableRequest;
+import software.amazon.awssdk.services.dynamodb.model.DescribeTableResponse;
+import software.amazon.awssdk.services.dynamodb.model.ListTablesRequest;
+import software.amazon.awssdk.services.dynamodb.model.ListTablesResponse;
+import software.amazon.awssdk.services.dynamodb.model.ResourceNotFoundException;
+import software.amazon.awssdk.services.dynamodb.model.ReturnConsumedCapacity;
+import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
+import software.amazon.awssdk.services.dynamodb.model.ScanResponse;
+import software.amazon.awssdk.services.dynamodb.model.TableDescription;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -18,7 +30,8 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/health")
-@Tag(name = "Health Check", description = "Endpoints para verificação de saúde do sistema")
+@Tag(name = "Health", description = "Operational endpoints for checking DynamoDB connectivity and table details")
+@SecurityRequirement(name = "bearerAuth")
 public class HealthCheckController {
 
     private final DynamoDbClient dynamoDbClient;
@@ -28,14 +41,22 @@ public class HealthCheckController {
     }
 
     @GetMapping("/dynamodb")
-    @Operation(summary = "Verificar saúde do DynamoDB")
+    @Operation(
+            summary = "Check DynamoDB health",
+            description = "Performs a lightweight connectivity check and returns sample metadata for DynamoDB."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "DynamoDB is reachable"),
+            @ApiResponse(responseCode = "503", description = "DynamoDB is unavailable"),
+            @ApiResponse(responseCode = "401", description = "Authentication required"),
+            @ApiResponse(responseCode = "403", description = "Insufficient permissions")
+    })
     public ResponseEntity<Map<String, Object>> checkDynamoDB() {
         Map<String, Object> response = new HashMap<>();
 
         try {
             Instant start = Instant.now();
 
-            // Teste 1: Listar tabelas
             ListTablesResponse listResponse = dynamoDbClient.listTables(
                     ListTablesRequest.builder()
                             .limit(5)
@@ -51,7 +72,6 @@ public class HealthCheckController {
             response.put("availableTables", listResponse.tableNames().size());
             response.put("tableNames", listResponse.tableNames());
 
-            // Teste adicional: Descrever uma tabela se existir
             if (!listResponse.tableNames().isEmpty()) {
                 String tableName = listResponse.tableNames().get(0);
                 try {
@@ -82,7 +102,16 @@ public class HealthCheckController {
     }
 
     @GetMapping("/dynamodb/tables")
-    @Operation(summary = "Listar todas as tabelas DynamoDB")
+    @Operation(
+            summary = "List DynamoDB tables",
+            description = "Returns all visible DynamoDB tables and a summary for each one."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Tables returned successfully"),
+            @ApiResponse(responseCode = "500", description = "Unexpected error while loading tables"),
+            @ApiResponse(responseCode = "401", description = "Authentication required"),
+            @ApiResponse(responseCode = "403", description = "Insufficient permissions")
+    })
     public ResponseEntity<Map<String, Object>> listAllTables() {
         Map<String, Object> response = new HashMap<>();
 
@@ -93,7 +122,6 @@ public class HealthCheckController {
             response.put("count", listResponse.tableNames().size());
             response.put("tables", listResponse.tableNames());
 
-            // Detalhes de cada tabela
             Map<String, Object> tableDetails = new HashMap<>();
             for (String tableName : listResponse.tableNames()) {
                 try {
@@ -112,7 +140,6 @@ public class HealthCheckController {
                             ? table.creationDateTime().toString()
                             : "N/A");
 
-                    // Chaves primárias
                     details.put("primaryKey", table.keySchema().stream()
                             .map(ks -> ks.attributeName() + " (" + ks.keyType() + ")")
                             .collect(Collectors.toList())
@@ -135,8 +162,20 @@ public class HealthCheckController {
     }
 
     @GetMapping("/dynamodb/table/{tableName}")
-    @Operation(summary = "Verificar tabela específica")
-    public ResponseEntity<Map<String, Object>> checkTable(@PathVariable String tableName) {
+    @Operation(
+            summary = "Inspect a DynamoDB table",
+            description = "Returns metadata, keys, indexes, and a simple scan test for a specific DynamoDB table."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Table details returned successfully"),
+            @ApiResponse(responseCode = "404", description = "Table not found"),
+            @ApiResponse(responseCode = "500", description = "Unexpected error while inspecting the table"),
+            @ApiResponse(responseCode = "401", description = "Authentication required"),
+            @ApiResponse(responseCode = "403", description = "Insufficient permissions")
+    })
+    public ResponseEntity<Map<String, Object>> checkTable(
+            @Parameter(description = "DynamoDB table name", example = "oryzem-orders")
+            @PathVariable String tableName) {
         Map<String, Object> response = new HashMap<>();
 
         try {
@@ -156,7 +195,6 @@ public class HealthCheckController {
             response.put("sizeBytes", table.tableSizeBytes());
             response.put("created", table.creationDateTime().toString());
 
-            // Chave primária
             response.put("primaryKey", table.keySchema().stream()
                     .map(ks -> Map.of(
                             "attribute", ks.attributeName(),
@@ -165,7 +203,6 @@ public class HealthCheckController {
                     .collect(Collectors.toList())
             );
 
-            // Atributos
             response.put("attributes", table.attributeDefinitions().stream()
                     .map(ad -> Map.of(
                             "name", ad.attributeName(),
@@ -174,7 +211,6 @@ public class HealthCheckController {
                     .collect(Collectors.toList())
             );
 
-            // Índices secundários
             if (!table.globalSecondaryIndexes().isEmpty()) {
                 response.put("globalSecondaryIndexes", table.globalSecondaryIndexes().stream()
                         .map(gsi -> Map.of(
@@ -188,7 +224,6 @@ public class HealthCheckController {
                 );
             }
 
-            // Testar leitura
             try {
                 ScanResponse scanResponse = dynamoDbClient.scan(
                         ScanRequest.builder()
@@ -226,4 +261,3 @@ public class HealthCheckController {
         }
     }
 }
-
