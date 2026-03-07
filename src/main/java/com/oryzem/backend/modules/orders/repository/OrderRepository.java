@@ -1,5 +1,6 @@
 package com.oryzem.backend.modules.orders.repository;
 
+import com.oryzem.backend.core.tenant.TenantScope;
 import com.oryzem.backend.modules.orders.domain.Order;
 import com.oryzem.backend.modules.orders.domain.OrderItem;
 import com.oryzem.backend.modules.orders.domain.OrderSource;
@@ -14,10 +15,13 @@ import java.util.concurrent.ConcurrentMap;
 @Repository
 public class OrderRepository {
 
-    private final ConcurrentMap<String, Order> ordersById = new ConcurrentHashMap<>();
-    private final ConcurrentMap<String, String> orderIdByExternalKey = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, ConcurrentMap<String, Order>> ordersByTenantAndId = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, ConcurrentMap<String, String>> orderIdsByTenantAndExternalKey = new ConcurrentHashMap<>();
 
     public synchronized Order save(Order order) {
+        String tenantScope = TenantScope.current();
+        ConcurrentMap<String, Order> ordersById = tenantOrders(tenantScope);
+        ConcurrentMap<String, String> orderIdByExternalKey = tenantOrderIdsByExternalKey(tenantScope);
         Order copy = copy(order);
         ordersById.put(copy.getId(), copy);
 
@@ -35,7 +39,7 @@ public class OrderRepository {
     }
 
     public Optional<Order> findById(String orderId) {
-        return Optional.ofNullable(ordersById.get(orderId)).map(this::copy);
+        return Optional.ofNullable(tenantOrders(TenantScope.current()).get(orderId)).map(this::copy);
     }
 
     public Optional<Order> findByExternalId(OrderSource source, String merchantId, String externalId) {
@@ -43,7 +47,7 @@ public class OrderRepository {
             return Optional.empty();
         }
 
-        String orderId = orderIdByExternalKey.get(buildExternalKey(source, merchantId, externalId));
+        String orderId = tenantOrderIdsByExternalKey(TenantScope.current()).get(buildExternalKey(source, merchantId, externalId));
         if (orderId == null) {
             return Optional.empty();
         }
@@ -52,10 +56,18 @@ public class OrderRepository {
 
     public List<Order> findAll() {
         List<Order> orders = new ArrayList<>();
-        for (Order order : ordersById.values()) {
+        for (Order order : tenantOrders(TenantScope.current()).values()) {
             orders.add(copy(order));
         }
         return orders;
+    }
+
+    private ConcurrentMap<String, Order> tenantOrders(String tenantScope) {
+        return ordersByTenantAndId.computeIfAbsent(tenantScope, ignored -> new ConcurrentHashMap<>());
+    }
+
+    private ConcurrentMap<String, String> tenantOrderIdsByExternalKey(String tenantScope) {
+        return orderIdsByTenantAndExternalKey.computeIfAbsent(tenantScope, ignored -> new ConcurrentHashMap<>());
     }
 
     private String buildExternalKey(OrderSource source, String merchantId, String externalId) {

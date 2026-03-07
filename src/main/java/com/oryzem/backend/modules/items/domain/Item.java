@@ -1,5 +1,6 @@
 package com.oryzem.backend.modules.items.domain;
 
+import com.oryzem.backend.core.tenant.TenantKeyCodec;
 import lombok.*;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
@@ -18,7 +19,9 @@ import java.time.Instant;
 public class Item {
 
     private String partNumberVersion;
+    private String partNumberVersionKey;
     private String supplierID;
+    private String supplierKey;
     private String processNumber;
     private String partDescription;
     private String tbtVffDate;
@@ -30,24 +33,43 @@ public class Item {
     private Instant createdAt = Instant.now();
     private Instant updatedAt;
     private ItemStatus status;
+    private String statusKey;
+    private String tenantId;
 
-    @DynamoDbSortKey
-    @DynamoDbSecondarySortKey(indexNames = "FindByStatus")
-    @DynamoDbAttribute("PartNumber#Version")
     public String getPartNumberVersion() {
         return partNumberVersion;
     }
 
-    @DynamoDbPartitionKey
-    @DynamoDbAttribute("SupplierID")
     public String getSupplierID() {
         return supplierID;
     }
 
-    @DynamoDbSecondaryPartitionKey(indexNames = "FindByStatus")
-    @DynamoDbAttribute("Status")
     public ItemStatus getStatus() {
         return status;
+    }
+
+    @DynamoDbSortKey
+    @DynamoDbSecondarySortKey(indexNames = "FindByStatus")
+    @DynamoDbAttribute("PartNumber#Version")
+    public String getPartNumberVersionKey() {
+        return partNumberVersionKey;
+    }
+
+    @DynamoDbPartitionKey
+    @DynamoDbAttribute("SupplierID")
+    public String getSupplierKey() {
+        return supplierKey;
+    }
+
+    @DynamoDbSecondaryPartitionKey(indexNames = "FindByStatus")
+    @DynamoDbAttribute("Status")
+    public String getStatusKey() {
+        return statusKey;
+    }
+
+    @DynamoDbAttribute("tenantId")
+    public String getTenantId() {
+        return tenantId;
     }
 
     @DynamoDbAttribute("CreatedAt")
@@ -95,8 +117,18 @@ public class Item {
         this.partNumberVersion = partNumberVersion;
     }
 
+    public void setPartNumberVersionKey(String partNumberVersionKey) {
+        this.partNumberVersionKey = partNumberVersionKey;
+        this.partNumberVersion = TenantKeyCodec.decode(partNumberVersionKey);
+    }
+
     public void setSupplierID(String supplierID) {
         this.supplierID = supplierID;
+    }
+
+    public void setSupplierKey(String supplierKey) {
+        this.supplierKey = supplierKey;
+        this.supplierID = TenantKeyCodec.decode(supplierKey);
     }
 
     public void setCreatedAt(Instant createdAt) {
@@ -133,6 +165,16 @@ public class Item {
 
     public void setStatus(ItemStatus status) {
         this.status = status;
+    }
+
+    public void setStatusKey(String statusKey) {
+        this.statusKey = statusKey;
+        String decoded = TenantKeyCodec.decode(statusKey);
+        this.status = decoded == null ? null : ItemStatus.valueOf(decoded);
+    }
+
+    public void setTenantId(String tenantId) {
+        this.tenantId = tenantId;
     }
 }
 

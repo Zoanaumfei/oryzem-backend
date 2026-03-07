@@ -1,5 +1,6 @@
 package com.oryzem.backend.modules.initiatives.domain;
 
+import com.oryzem.backend.core.tenant.TenantKeyCodec;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -17,7 +18,9 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortK
 public class Initiative {
 
     private String pk;
+    private String pkKey;
     private String sk;
+    private String skKey;
     private String initiativeId;
     private String initiativeName;
     private String initiativeNameLower;
@@ -29,17 +32,26 @@ public class Initiative {
     private String leaderName;
     private String updatedAt;
     private String createdAt;
+    private String tenantId;
 
-    @DynamoDbPartitionKey
-    @DynamoDbAttribute("PK")
     public String getPk() {
         return pk;
     }
 
-    @DynamoDbSortKey
-    @DynamoDbAttribute("SK")
     public String getSk() {
         return sk;
+    }
+
+    @DynamoDbPartitionKey
+    @DynamoDbAttribute("PK")
+    public String getPkKey() {
+        return pkKey;
+    }
+
+    @DynamoDbSortKey
+    @DynamoDbAttribute("SK")
+    public String getSkKey() {
+        return skKey;
     }
 
     @DynamoDbAttribute("initiativeId")
@@ -97,12 +109,27 @@ public class Initiative {
         return createdAt;
     }
 
+    @DynamoDbAttribute("tenantId")
+    public String getTenantId() {
+        return tenantId;
+    }
+
     public void setPk(String pk) {
         this.pk = pk;
     }
 
+    public void setPkKey(String pkKey) {
+        this.pkKey = pkKey;
+        this.pk = TenantKeyCodec.decode(pkKey);
+    }
+
     public void setSk(String sk) {
         this.sk = sk;
+    }
+
+    public void setSkKey(String skKey) {
+        this.skKey = skKey;
+        this.sk = TenantKeyCodec.decode(skKey);
     }
 
     public void setInitiativeId(String initiativeId) {
@@ -147,5 +174,9 @@ public class Initiative {
 
     public void setCreatedAt(String createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public void setTenantId(String tenantId) {
+        this.tenantId = tenantId;
     }
 }

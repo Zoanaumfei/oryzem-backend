@@ -1,5 +1,7 @@
 package com.oryzem.backend.modules.initiatives.repository;
 
+import com.oryzem.backend.core.tenant.TenantKeyCodec;
+import com.oryzem.backend.core.tenant.TenantScope;
 import com.oryzem.backend.modules.initiatives.domain.Initiative;
 import com.oryzem.backend.modules.initiatives.domain.InitiativeKeys;
 import lombok.extern.slf4j.Slf4j;
@@ -60,7 +62,7 @@ public class InitiativeRepository {
 
     public Initiative save(Initiative initiative) {
         log.info("Saving initiative: {}", initiative.getInitiativeId());
-        getTable().putItem(initiative);
+        getTable().putItem(toPersisted(initiative));
         return initiative;
     }
 
@@ -74,7 +76,7 @@ public class InitiativeRepository {
                 .build();
 
         PutItemEnhancedRequest<Initiative> request = PutItemEnhancedRequest.builder(Initiative.class)
-                .item(initiative)
+                .item(toPersisted(initiative))
                 .conditionExpression(condition)
                 .build();
 
@@ -84,24 +86,26 @@ public class InitiativeRepository {
 
     public Optional<Initiative> findByKey(String pk, String sk) {
         Key key = Key.builder()
-                .partitionValue(pk)
-                .sortValue(sk)
+                .partitionValue(TenantKeyCodec.encode(pk))
+                .sortValue(TenantKeyCodec.encode(sk))
                 .build();
         Initiative initiative = getTable().getItem(key);
-        return Optional.ofNullable(initiative);
+        return Optional.ofNullable(initiative).map(this::toDomain);
     }
 
     public List<Initiative> findAllByYear(String year) {
         String pk = InitiativeKeys.yearPk(year);
         QueryConditional conditional = QueryConditional.keyEqualTo(
                 Key.builder()
-                        .partitionValue(pk)
+                        .partitionValue(TenantKeyCodec.encode(pk))
                         .build()
         );
 
         List<Initiative> initiatives = new ArrayList<>();
         for (var page : getTable().query(r -> r.queryConditional(conditional))) {
-            initiatives.addAll(page.items());
+            for (Initiative initiative : page.items()) {
+                initiatives.add(toDomain(initiative));
+            }
         }
         return initiatives;
     }
@@ -118,15 +122,19 @@ public class InitiativeRepository {
 
         List<Initiative> initiatives = new ArrayList<>();
         for (var page : getTable().scan(r -> r.filterExpression(filter))) {
-            initiatives.addAll(page.items());
+            for (Initiative initiative : page.items()) {
+                if (TenantScope.current().equals(initiative.getTenantId())) {
+                    initiatives.add(toDomain(initiative));
+                }
+            }
         }
         return initiatives;
     }
 
     public void delete(String pk, String sk) {
         Key key = Key.builder()
-                .partitionValue(pk)
-                .sortValue(sk)
+                .partitionValue(TenantKeyCodec.encode(pk))
+                .sortValue(TenantKeyCodec.encode(sk))
                 .build();
         getTable().deleteItem(key);
     }
@@ -135,8 +143,8 @@ public class InitiativeRepository {
         UpdateItemRequest request = UpdateItemRequest.builder()
                 .tableName(tableName)
                 .key(Map.of(
-                        "PK", AttributeValue.builder().s(COUNTER_PK).build(),
-                        "SK", AttributeValue.builder().s(COUNTER_SK).build()
+                        "PK", AttributeValue.builder().s(TenantKeyCodec.encode(TenantScope.current(), COUNTER_PK)).build(),
+                        "SK", AttributeValue.builder().s(TenantKeyCodec.encode(TenantScope.current(), COUNTER_SK)).build()
                 ))
                 .updateExpression("SET #val = if_not_exists(#val, :zero) + :inc")
                 .expressionAttributeNames(Map.of("#val", COUNTER_ATTR))
@@ -154,12 +162,12 @@ public class InitiativeRepository {
     }
 
     public Optional<InitiativeIdempotencyRecord> getCreateIdempotency(String key) {
-        String pk = IDEMPOTENCY_PK_PREFIX + key;
+        String pk = TenantKeyCodec.encode(TenantScope.current(), IDEMPOTENCY_PK_PREFIX + key);
         GetItemRequest request = GetItemRequest.builder()
                 .tableName(tableName)
                 .key(Map.of(
                         "PK", AttributeValue.builder().s(pk).build(),
-                        "SK", AttributeValue.builder().s(IDEMPOTENCY_CREATE_SK).build()
+                        "SK", AttributeValue.builder().s(TenantKeyCodec.encode(TenantScope.current(), IDEMPOTENCY_CREATE_SK)).build()
                 ))
                 .build();
 
@@ -176,15 +184,16 @@ public class InitiativeRepository {
     }
 
     public boolean putCreateIdempotency(InitiativeIdempotencyRecord record) {
-        String pk = IDEMPOTENCY_PK_PREFIX + record.key();
+        String pk = TenantKeyCodec.encode(TenantScope.current(), IDEMPOTENCY_PK_PREFIX + record.key());
         PutItemRequest request = PutItemRequest.builder()
                 .tableName(tableName)
                 .item(Map.of(
                         "PK", AttributeValue.builder().s(pk).build(),
-                        "SK", AttributeValue.builder().s(IDEMPOTENCY_CREATE_SK).build(),
+                        "SK", AttributeValue.builder().s(TenantKeyCodec.encode(TenantScope.current(), IDEMPOTENCY_CREATE_SK)).build(),
                         "initiativeId", AttributeValue.builder().s(record.initiativeId()).build(),
                         "initiativeCode", AttributeValue.builder().s(record.initiativeCode()).build(),
-                        "createdAt", AttributeValue.builder().s(record.createdAt()).build()
+                        "createdAt", AttributeValue.builder().s(record.createdAt()).build(),
+                        "tenantId", AttributeValue.builder().s(TenantScope.current()).build()
                 ))
                 .conditionExpression("attribute_not_exists(#pk) AND attribute_not_exists(#sk)")
                 .expressionAttributeNames(Map.of(
@@ -205,8 +214,8 @@ public class InitiativeRepository {
         UpdateItemRequest request = UpdateItemRequest.builder()
                 .tableName(tableName)
                 .key(Map.of(
-                        "PK", AttributeValue.builder().s(pk).build(),
-                        "SK", AttributeValue.builder().s(sk).build()
+                        "PK", AttributeValue.builder().s(TenantKeyCodec.encode(pk)).build(),
+                        "SK", AttributeValue.builder().s(TenantKeyCodec.encode(sk)).build()
                 ))
                 .updateExpression("SET initiativeCode = :code")
                 .conditionExpression("attribute_exists(PK) AND attribute_exists(SK) AND attribute_not_exists(initiativeCode)")
@@ -228,5 +237,42 @@ public class InitiativeRepository {
             String initiativeCode,
             String createdAt
     ) {
+    }
+
+    private Initiative toPersisted(Initiative initiative) {
+        Initiative copy = copy(initiative);
+        copy.setTenantId(TenantScope.current());
+        copy.setPkKey(TenantKeyCodec.encode(copy.getPk()));
+        copy.setSkKey(TenantKeyCodec.encode(copy.getSk()));
+        return copy;
+    }
+
+    private Initiative toDomain(Initiative initiative) {
+        Initiative copy = copy(initiative);
+        copy.setPk(initiative.getPk());
+        copy.setSk(initiative.getSk());
+        copy.setTenantId(initiative.getTenantId());
+        return copy;
+    }
+
+    private Initiative copy(Initiative initiative) {
+        return Initiative.builder()
+                .pk(initiative.getPk())
+                .pkKey(initiative.getPkKey())
+                .sk(initiative.getSk())
+                .skKey(initiative.getSkKey())
+                .initiativeId(initiative.getInitiativeId())
+                .initiativeName(initiative.getInitiativeName())
+                .initiativeNameLower(initiative.getInitiativeNameLower())
+                .initiativeCode(initiative.getInitiativeCode())
+                .initiativeDescription(initiative.getInitiativeDescription())
+                .initiativeType(initiative.getInitiativeType())
+                .initiativeDueDate(initiative.getInitiativeDueDate())
+                .initiativeStatus(initiative.getInitiativeStatus())
+                .leaderName(initiative.getLeaderName())
+                .updatedAt(initiative.getUpdatedAt())
+                .createdAt(initiative.getCreatedAt())
+                .tenantId(initiative.getTenantId())
+                .build();
     }
 }

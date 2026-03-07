@@ -1,5 +1,6 @@
 package com.oryzem.backend.modules.birthdays.domain;
 
+import com.oryzem.backend.core.tenant.TenantKeyCodec;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -17,22 +18,33 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortK
 public class MonthlyBirthday {
 
     private Integer month;
+    private String monthKey;
     private Integer day;
     private String name;
+    private String nameKey;
     private Integer corporateMonth;
     private Integer corporateYear;
     private String photoKey;
+    private String tenantId;
 
-    @DynamoDbPartitionKey
-    @DynamoDbAttribute("month")
     public Integer getMonth() {
         return month;
     }
 
-    @DynamoDbSortKey
-    @DynamoDbAttribute("name")
     public String getName() {
         return name;
+    }
+
+    @DynamoDbPartitionKey
+    @DynamoDbAttribute("month")
+    public String getMonthKey() {
+        return monthKey;
+    }
+
+    @DynamoDbSortKey
+    @DynamoDbAttribute("name")
+    public String getNameKey() {
+        return nameKey;
     }
 
     @DynamoDbAttribute("day")
@@ -55,12 +67,28 @@ public class MonthlyBirthday {
         return photoKey;
     }
 
+    @DynamoDbAttribute("tenantId")
+    public String getTenantId() {
+        return tenantId;
+    }
+
     public void setMonth(Integer month) {
         this.month = month;
     }
 
+    public void setMonthKey(String monthKey) {
+        this.monthKey = monthKey;
+        String decoded = TenantKeyCodec.decode(monthKey);
+        this.month = decoded == null ? null : Integer.valueOf(decoded);
+    }
+
     public void setName(String name) {
         this.name = name;
+    }
+
+    public void setNameKey(String nameKey) {
+        this.nameKey = nameKey;
+        this.name = TenantKeyCodec.decode(nameKey);
     }
 
     public void setDay(Integer day) {
@@ -77,6 +105,10 @@ public class MonthlyBirthday {
 
     public void setPhotoKey(String photoKey) {
         this.photoKey = photoKey;
+    }
+
+    public void setTenantId(String tenantId) {
+        this.tenantId = tenantId;
     }
 }
 

@@ -16,6 +16,8 @@ package com.oryzem.backend.modules.items.repository;
 
 //Analogia: E o garcom do restaurante - leva seus pedidos (queries) ate a cozinha (banco de dados)
 
+import com.oryzem.backend.core.tenant.TenantKeyCodec;
+import com.oryzem.backend.core.tenant.TenantScope;
 import com.oryzem.backend.modules.items.domain.Item;
 import com.oryzem.backend.modules.items.domain.ItemStatus;
 import lombok.extern.slf4j.Slf4j;
@@ -60,7 +62,8 @@ public class ItemRepository {
 
     public Item save(Item item) {
         log.info("Salvando item: {}/{}", item.getSupplierID(), item.getPartNumberVersion());
-        getItemTable().putItem(item);
+        Item persisted = toPersisted(item);
+        getItemTable().putItem(persisted);
         return item;
     }
 
@@ -76,7 +79,7 @@ public class ItemRepository {
                 .build();
 
         PutItemEnhancedRequest<Item> request = PutItemEnhancedRequest.builder(Item.class)
-                .item(item)
+                .item(toPersisted(item))
                 .conditionExpression(condition)
                 .build();
 
@@ -88,12 +91,12 @@ public class ItemRepository {
         log.info("Buscando item: {}/{}", supplierID, partNumberVersion);
 
         Key key = Key.builder()
-                .partitionValue(supplierID)
-                .sortValue(partNumberVersion)
+                .partitionValue(TenantKeyCodec.encode(supplierID))
+                .sortValue(TenantKeyCodec.encode(partNumberVersion))
                 .build();
 
         Item item = getItemTable().getItem(key);
-        return Optional.ofNullable(item);
+        return Optional.ofNullable(item).map(this::toDomain);
     }
 
     public boolean exists(String supplierID, String partNumberVersion) {
@@ -104,8 +107,8 @@ public class ItemRepository {
         log.info("Deletando item: {}/{}", supplierID, partNumberVersion);
 
         Key key = Key.builder()
-                .partitionValue(supplierID)
-                .sortValue(partNumberVersion)
+                .partitionValue(TenantKeyCodec.encode(supplierID))
+                .sortValue(TenantKeyCodec.encode(partNumberVersion))
                 .build();
 
         getItemTable().deleteItem(key);
@@ -115,14 +118,14 @@ public class ItemRepository {
         String prefix = partNumber + "#ver";
         QueryConditional conditional = QueryConditional.sortBeginsWith(
                 Key.builder()
-                        .partitionValue(supplierID)
-                        .sortValue(prefix)
+                        .partitionValue(TenantKeyCodec.encode(supplierID))
+                        .sortValue(TenantKeyCodec.encode(prefix))
                         .build()
         );
 
         int maxVersion = -1;
         for (Item item : getItemTable().query(r -> r.queryConditional(conditional)).items()) {
-            int version = extractVersion(item.getPartNumberVersion());
+            int version = extractVersion(toDomain(item).getPartNumberVersion());
             if (version > maxVersion) {
                 maxVersion = version;
             }
@@ -148,13 +151,15 @@ public class ItemRepository {
 
         QueryConditional conditional = QueryConditional.keyEqualTo(
                 Key.builder()
-                        .partitionValue(status.name())
+                        .partitionValue(TenantKeyCodec.encode(status.name()))
                         .build()
         );
 
         List<Item> items = new ArrayList<>();
         for (var page : index.query(r -> r.queryConditional(conditional))) {
-            items.addAll(page.items());
+            for (Item item : page.items()) {
+                items.add(toDomain(item));
+            }
         }
         return items;
     }
@@ -164,8 +169,50 @@ public class ItemRepository {
         List<Item> items = new ArrayList<>();
         getItemTable().scan()
                 .items()
-                .forEach(items::add);
+                .forEach(item -> {
+                    if (TenantScope.current().equals(item.getTenantId())) {
+                        items.add(toDomain(item));
+                    }
+                });
         return items;
+    }
+
+    private Item toPersisted(Item item) {
+        Item copy = copy(item);
+        copy.setTenantId(TenantScope.current());
+        copy.setSupplierKey(TenantKeyCodec.encode(copy.getSupplierID()));
+        copy.setPartNumberVersionKey(TenantKeyCodec.encode(copy.getPartNumberVersion()));
+        copy.setStatusKey(copy.getStatus() == null ? null : TenantKeyCodec.encode(copy.getStatus().name()));
+        return copy;
+    }
+
+    private Item toDomain(Item item) {
+        Item copy = copy(item);
+        copy.setSupplierID(item.getSupplierID());
+        copy.setPartNumberVersion(item.getPartNumberVersion());
+        copy.setStatus(item.getStatus());
+        copy.setTenantId(item.getTenantId());
+        return copy;
+    }
+
+    private Item copy(Item item) {
+        return Item.builder()
+                .partNumberVersion(item.getPartNumberVersion())
+                .partNumberVersionKey(item.getPartNumberVersionKey())
+                .supplierID(item.getSupplierID())
+                .supplierKey(item.getSupplierKey())
+                .processNumber(item.getProcessNumber())
+                .partDescription(item.getPartDescription())
+                .tbtVffDate(item.getTbtVffDate())
+                .tbtPvsDate(item.getTbtPvsDate())
+                .tbt0sDate(item.getTbt0sDate())
+                .sopDate(item.getSopDate())
+                .createdAt(item.getCreatedAt())
+                .updatedAt(item.getUpdatedAt())
+                .status(item.getStatus())
+                .statusKey(item.getStatusKey())
+                .tenantId(item.getTenantId())
+                .build();
     }
 }
 

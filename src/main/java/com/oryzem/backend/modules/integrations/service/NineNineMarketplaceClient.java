@@ -1,18 +1,27 @@
 package com.oryzem.backend.modules.integrations.service;
 
-import com.oryzem.backend.modules.integrations.domain.MarketplaceOrderItemPayload;
 import com.oryzem.backend.modules.integrations.domain.MarketplaceOrderPayload;
 import com.oryzem.backend.modules.orders.domain.OrderSource;
 import com.oryzem.backend.modules.orders.domain.OrderStatus;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.math.BigDecimal;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Component
 @Slf4j
 public class NineNineMarketplaceClient implements MarketplaceClient {
+
+    private final boolean enabled;
+    private final AtomicBoolean warnedLegacy = new AtomicBoolean(false);
+
+    public NineNineMarketplaceClient(
+            @Value("${app.integrations.99food.enabled:false}") boolean enabled
+    ) {
+        this.enabled = enabled;
+    }
 
     @Override
     public OrderSource supportedSource() {
@@ -21,32 +30,32 @@ public class NineNineMarketplaceClient implements MarketplaceClient {
 
     @Override
     public List<MarketplaceOrderPayload> fetchNewOrders() {
-        MarketplaceOrderPayload stubOrder = MarketplaceOrderPayload.builder()
-                .source(OrderSource.NINENINE)
-                .merchantId("99FOOD-STUB-MERCHANT")
-                .externalOrderId("99FOOD-STUB-2001")
-                .customerName("Cliente 99Food")
-                .items(List.of(
-                        MarketplaceOrderItemPayload.builder()
-                                .sku("REFRI-COLA-2L")
-                                .name("Refrigerante Cola 2L")
-                                .quantity(2)
-                                .unitPrice(new BigDecimal("12.00"))
-                                .build()
-                ))
-                .build();
-        return List.of(stubOrder);
+        if (!enabled) {
+            return List.of();
+        }
+        warnLegacyNotImplemented();
+        return List.of();
     }
 
     @Override
     public void ackOrder(String merchantId, String externalOrderId) {
-        log.info("99Food ack order {} (merchant={})", externalOrderId, merchantId);
-        // TODO Integrate with 99Food API acknowledgement endpoint.
+        if (!enabled) {
+            return;
+        }
+        warnLegacyNotImplemented();
     }
 
     @Override
     public void updateOrderStatus(String merchantId, String externalOrderId, OrderStatus status) {
-        log.info("99Food update order {} to {} (merchant={})", externalOrderId, status, merchantId);
-        // TODO Integrate with 99Food API order status endpoint.
+        if (!enabled) {
+            return;
+        }
+        warnLegacyNotImplemented();
+    }
+
+    private void warnLegacyNotImplemented() {
+        if (warnedLegacy.compareAndSet(false, true)) {
+            log.warn("99Food client is legacy and disabled for real traffic. Use RAPPI integration instead.");
+        }
     }
 }

@@ -13,6 +13,13 @@ public class AwsProperties {
     private String accessKeyId;
     private String secretAccessKey;
     private String profile;  // Para usar ~/.aws/credentials
+    private ServiceEndpoint s3 = new ServiceEndpoint();
+    private ServiceEndpoint sqs = new ServiceEndpoint();
+
+    @Data
+    public static class ServiceEndpoint {
+        private String endpoint;
+    }
 
 }
 

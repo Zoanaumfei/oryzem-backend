@@ -2,18 +2,19 @@ package com.oryzem.backend.modules.integrations.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.oryzem.backend.modules.canonical.model.SourceChannel;
 import com.oryzem.backend.modules.integrations.config.IfoodProperties;
 import com.oryzem.backend.modules.integrations.domain.IfoodEventLedgerEntry;
 import com.oryzem.backend.modules.integrations.domain.MarketplaceOrderPayload;
 import com.oryzem.backend.modules.integrations.dto.IfoodIngestionResponse;
 import com.oryzem.backend.modules.integrations.repository.IfoodEventLedgerRepository;
 import com.oryzem.backend.modules.integrations.repository.IfoodEventLedgerRepository.RegistrationOutcome;
-import com.oryzem.backend.modules.orders.dto.CreateOrderRequest;
-import com.oryzem.backend.modules.orders.dto.OrderResponse;
-import com.oryzem.backend.modules.orders.service.OrderService;
+import com.oryzem.backend.modules.messaging.service.OrderIngestResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -35,10 +36,10 @@ public class IfoodIngestionService {
 
     private final IfoodMarketplaceClient ifoodClient;
     private final MarketplaceOrderMapper marketplaceOrderMapper;
-    private final OrderService orderService;
     private final IfoodProperties ifoodProperties;
     private final IfoodEventLedgerRepository eventLedgerRepository;
     private final ObjectMapper objectMapper;
+    private final CanonicalOrderIngestBridge canonicalOrderIngestBridge;
 
     private final Map<String, Instant> webhookProcessedEventLedger = new ConcurrentHashMap<>();
     private final Map<String, Instant> webhookEventsInFlight = new ConcurrentHashMap<>();
@@ -59,8 +60,8 @@ public class IfoodIngestionService {
         for (MarketplaceOrderPayload payload : payloads) {
             processed++;
             try {
-                OrderResponse response = createOrder(payload);
-                if ("Order already exists".equals(response.getMessage())) {
+                OrderIngestResult result = createOrder(payload, SourceChannel.POLLING, null, Instant.now());
+                if (result == OrderIngestResult.DUPLICATE) {
                     duplicates++;
                 } else {
                     imported++;
@@ -99,7 +100,10 @@ public class IfoodIngestionService {
         try {
             JsonNode root = objectMapper.readTree(rawBody);
             if (!root.isArray()) {
-                throw new IllegalArgumentException("iFood webhook payload must be a JSON array");
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "iFood webhook payload must be a JSON array"
+                );
             }
 
             for (JsonNode eventNode : root) {
@@ -124,8 +128,13 @@ public class IfoodIngestionService {
                     }
 
                     MarketplaceOrderPayload payload = ifoodClient.fetchOrderById(event.merchantId(), event.orderId());
-                    OrderResponse response = createOrder(payload);
-                    if ("Order already exists".equals(response.getMessage())) {
+                    OrderIngestResult result = createOrder(
+                            payload,
+                            SourceChannel.WEBHOOK,
+                            event.eventId(),
+                            Instant.now()
+                    );
+                    if (result == OrderIngestResult.DUPLICATE) {
                         duplicates++;
                     } else {
                         imported++;
@@ -139,8 +148,14 @@ public class IfoodIngestionService {
                     markFailed(event, ex.getMessage());
                 }
             }
+        } catch (ResponseStatusException ex) {
+            throw ex;
         } catch (Exception ex) {
-            throw new IllegalArgumentException("Invalid iFood webhook payload: " + ex.getMessage(), ex);
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Invalid iFood webhook payload",
+                    ex
+            );
         }
 
         return IfoodIngestionResponse.builder()
@@ -152,9 +167,20 @@ public class IfoodIngestionService {
                 .build();
     }
 
-    private OrderResponse createOrder(MarketplaceOrderPayload payload) {
-        CreateOrderRequest request = marketplaceOrderMapper.toCreateOrderRequest(payload);
-        return orderService.createOrder(request);
+    private OrderIngestResult createOrder(
+            MarketplaceOrderPayload payload,
+            SourceChannel sourceChannel,
+            String externalEventId,
+            Instant occurredAt
+    ) {
+        marketplaceOrderMapper.toCreateOrderRequest(payload);
+        try {
+            return canonicalOrderIngestBridge.ingestIfoodPayload(payload, sourceChannel, externalEventId, occurredAt);
+        } catch (Exception ex) {
+            log.warn("Canonical ingest shadow-write failed for iFood order {}/{}: {}",
+                    payload.getMerchantId(), payload.getExternalOrderId(), ex.getMessage(), ex);
+            throw ex;
+        }
     }
 
     private RegistrationOutcome registerForProcessing(IfoodWebhookEvent event) {
@@ -265,7 +291,7 @@ public class IfoodIngestionService {
             return;
         }
         if (receivedSignature == null || receivedSignature.isBlank()) {
-            throw new IllegalArgumentException("Missing iFood webhook signature");
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Missing iFood webhook signature");
         }
 
         String normalized = receivedSignature.trim();
@@ -291,12 +317,16 @@ public class IfoodIngestionService {
                     expectedBase64.getBytes(StandardCharsets.UTF_8)
             );
             if (!valid) {
-                throw new IllegalArgumentException("Invalid iFood webhook signature");
+                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid iFood webhook signature");
             }
-        } catch (IllegalArgumentException ex) {
+        } catch (ResponseStatusException ex) {
             throw ex;
         } catch (Exception ex) {
-            throw new IllegalArgumentException("Failed to validate iFood webhook signature: " + ex.getMessage(), ex);
+            throw new ResponseStatusException(
+                    HttpStatus.UNAUTHORIZED,
+                    "Failed to validate iFood webhook signature",
+                    ex
+            );
         }
     }
 

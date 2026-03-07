@@ -1,6 +1,7 @@
 package com.oryzem.backend.modules.catalog.repository;
 
 import com.oryzem.backend.modules.catalog.domain.Product;
+import com.oryzem.backend.core.tenant.TenantScope;
 import org.springframework.stereotype.Repository;
 
 import java.util.ArrayList;
@@ -12,10 +13,13 @@ import java.util.concurrent.ConcurrentMap;
 @Repository
 public class ProductRepository {
 
-    private final ConcurrentMap<String, Product> productsById = new ConcurrentHashMap<>();
-    private final ConcurrentMap<String, String> productIdBySku = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, ConcurrentMap<String, Product>> productsByTenantAndId = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, ConcurrentMap<String, String>> productIdsByTenantAndSku = new ConcurrentHashMap<>();
 
     public synchronized Product save(Product product) {
+        String tenantScope = TenantScope.current();
+        ConcurrentMap<String, Product> productsById = tenantProducts(tenantScope);
+        ConcurrentMap<String, String> productIdBySku = tenantProductIdsBySku(tenantScope);
         String skuKey = normalizeSku(product.getSku());
         String existingProductId = productIdBySku.get(skuKey);
         if (existingProductId != null && !existingProductId.equals(product.getId())) {
@@ -29,13 +33,13 @@ public class ProductRepository {
     }
 
     public Optional<Product> findById(String productId) {
-        Product product = productsById.get(productId);
+        Product product = tenantProducts(TenantScope.current()).get(productId);
         return Optional.ofNullable(product).map(this::copy);
     }
 
     public Optional<Product> findBySku(String sku) {
         String skuKey = normalizeSku(sku);
-        String productId = productIdBySku.get(skuKey);
+        String productId = tenantProductIdsBySku(TenantScope.current()).get(skuKey);
         if (productId == null) {
             return Optional.empty();
         }
@@ -44,10 +48,18 @@ public class ProductRepository {
 
     public List<Product> findAll() {
         List<Product> products = new ArrayList<>();
-        for (Product product : productsById.values()) {
+        for (Product product : tenantProducts(TenantScope.current()).values()) {
             products.add(copy(product));
         }
         return products;
+    }
+
+    private ConcurrentMap<String, Product> tenantProducts(String tenantScope) {
+        return productsByTenantAndId.computeIfAbsent(tenantScope, ignored -> new ConcurrentHashMap<>());
+    }
+
+    private ConcurrentMap<String, String> tenantProductIdsBySku(String tenantScope) {
+        return productIdsByTenantAndSku.computeIfAbsent(tenantScope, ignored -> new ConcurrentHashMap<>());
     }
 
     private String normalizeSku(String sku) {

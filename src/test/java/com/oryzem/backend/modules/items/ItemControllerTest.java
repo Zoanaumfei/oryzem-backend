@@ -1,6 +1,7 @@
 package com.oryzem.backend.modules.items;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.oryzem.backend.core.tenant.JwtTenantResolver;
 import com.oryzem.backend.modules.items.controller.ItemController;
 import com.oryzem.backend.modules.items.domain.ItemNotFoundException;
 import com.oryzem.backend.modules.items.dto.ItemRequest;
@@ -28,7 +29,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(ItemController.class)
 @AutoConfigureMockMvc
-@Import(SecurityConfig.class)
+@Import({SecurityConfig.class, JwtTenantResolver.class})
 class ItemControllerTest {
 
     @Autowired
@@ -42,7 +43,9 @@ class ItemControllerTest {
     private ItemService itemService;
 
     private RequestPostProcessor externalUserJwt() {
-        return jwt().authorities(new SimpleGrantedAuthority("External-User"));
+        return jwt()
+                .jwt(token -> token.claim("custom:tenant_id", "tenant-test"))
+                .authorities(new SimpleGrantedAuthority("External-User"));
     }
 
     /* =========================================================
@@ -115,7 +118,26 @@ class ItemControllerTest {
         request.setSopDate("2026/03/01");
 
         mockMvc.perform(post("/api/v1/items")
-                        .with(jwt())
+                        .with(jwt().jwt(token -> token.claim("custom:tenant_id", "tenant-test")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void shouldReturn403WhenTenantClaimIsMissing() throws Exception {
+        ItemRequest request = new ItemRequest();
+        request.setPartNumber("PN123");
+        request.setSupplierID("SUP456");
+        request.setProcessNumber("PROC-001");
+        request.setPartDescription("Part description");
+        request.setTbtVffDate("2026/01/16");
+        request.setTbtPvsDate("2026/01/20");
+        request.setTbt0sDate("2026/02/01");
+        request.setSopDate("2026/03/01");
+
+        mockMvc.perform(post("/api/v1/items")
+                        .with(jwt().authorities(new SimpleGrantedAuthority("External-User")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isForbidden());

@@ -31,7 +31,11 @@ public class OrderResponse {
     private OrderStatus status;
     private Instant createdAt;
     private Instant updatedAt;
+    private String storeId;
+    private String integrationAccountId;
     private boolean stockAllocated;
     private String allocationError;
+    @Builder.Default
+    private List<OrderTimelineEventResponse> timeline = new ArrayList<>();
     private String message;
 }

@@ -1,5 +1,6 @@
 package com.oryzem.backend.modules.vehicles.domain;
 
+import com.oryzem.backend.core.tenant.TenantKeyCodec;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -17,7 +18,9 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortK
 public class VehicleProject {
 
     private String projectId;
+    private String projectKey;
     private String als;
+    private String alsKey;
     private String customer;
     private String projectName;
     private String description;
@@ -47,17 +50,26 @@ public class VehicleProject {
     private String vffZp7Tbt;
     private String updatedAt;
     private String updatedBy;
+    private String tenantId;
 
-    @DynamoDbPartitionKey
-    @DynamoDbAttribute("PK")
     public String getProjectId() {
         return projectId;
     }
 
-    @DynamoDbSortKey
-    @DynamoDbAttribute("SK")
     public String getAls() {
         return als;
+    }
+
+    @DynamoDbPartitionKey
+    @DynamoDbAttribute("PK")
+    public String getProjectKey() {
+        return projectKey;
+    }
+
+    @DynamoDbSortKey
+    @DynamoDbAttribute("SK")
+    public String getAlsKey() {
+        return alsKey;
     }
 
     @DynamoDbAttribute("customer")
@@ -203,5 +215,24 @@ public class VehicleProject {
     @DynamoDbAttribute("updatedBy")
     public String getUpdatedBy() {
         return updatedBy;
+    }
+
+    @DynamoDbAttribute("tenantId")
+    public String getTenantId() {
+        return tenantId;
+    }
+
+    public void setProjectKey(String projectKey) {
+        this.projectKey = projectKey;
+        this.projectId = TenantKeyCodec.decode(projectKey);
+    }
+
+    public void setAlsKey(String alsKey) {
+        this.alsKey = alsKey;
+        this.als = TenantKeyCodec.decode(alsKey);
+    }
+
+    public void setTenantId(String tenantId) {
+        this.tenantId = tenantId;
     }
 }

@@ -1,5 +1,6 @@
 package com.oryzem.backend.modules.vehicles;
 
+import com.oryzem.backend.core.tenant.JwtTenantResolver;
 import com.oryzem.backend.modules.vehicles.controller.VehicleProjectController;
 import com.oryzem.backend.modules.vehicles.dto.VehicleProjectResponse;
 import com.oryzem.backend.modules.vehicles.dto.VehicleProjectUpsertRequest;
@@ -30,7 +31,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(VehicleProjectController.class)
 @AutoConfigureMockMvc
-@Import(SecurityConfig.class)
+@Import({SecurityConfig.class, JwtTenantResolver.class})
 class VehicleProjectControllerTest {
 
     private static final String VALID_REQUEST = """
@@ -152,13 +153,17 @@ class VehicleProjectControllerTest {
 
     private RequestPostProcessor internalUserJwt() {
         return jwt()
-                .jwt(token -> token.claim("email", "internal.user@oryzem.com"))
+                .jwt(token -> token
+                        .claim("email", "internal.user@oryzem.com")
+                        .claim("custom:tenant_id", "tenant-test"))
                 .authorities(new SimpleGrantedAuthority("Internal-User"));
     }
 
     private RequestPostProcessor externalUserJwt() {
         return jwt()
-                .jwt(token -> token.claim("email", "external.user@oryzem.com"))
+                .jwt(token -> token
+                        .claim("email", "external.user@oryzem.com")
+                        .claim("custom:tenant_id", "tenant-test"))
                 .authorities(new SimpleGrantedAuthority("External-User"));
     }
 

@@ -50,3 +50,17 @@ logs/
 *.log.*
 *.log.*.gz
 app.log.*
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraform.lock.hcl
+
+# Local tools
+tools/terraform/
